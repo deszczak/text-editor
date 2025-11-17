@@ -18,6 +18,14 @@
   outline: 1px solid rgba(160, 160, 160, .3);
 }
 
+/* Fix for external styles interfering with the editor */
+.wysi-wrapper {
+  display: inline-flex;
+  width: 100%;
+  font-weight: normal !important;
+  font-style: normal !important;
+}
+
 .wysi-wrapper:focus-within {
   outline-color: var(--wysi-primary);
 }

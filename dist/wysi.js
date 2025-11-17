@@ -6,6 +6,38 @@
 (function (window, document) {
   'use strict';
 
+  function _unsupportedIterableToArray(o, minLen) {
+    if (!o) return;
+    if (typeof o === "string") return _arrayLikeToArray(o, minLen);
+    var n = Object.prototype.toString.call(o).slice(8, -1);
+    if (n === "Object" && o.constructor) n = o.constructor.name;
+    if (n === "Map" || n === "Set") return Array.from(o);
+    if (n === "Arguments" || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(n)) return _arrayLikeToArray(o, minLen);
+  }
+  function _arrayLikeToArray(arr, len) {
+    if (len == null || len > arr.length) len = arr.length;
+    for (var i = 0, arr2 = new Array(len); i < len; i++) arr2[i] = arr[i];
+    return arr2;
+  }
+  function _createForOfIteratorHelperLoose(o, allowArrayLike) {
+    var it = typeof Symbol !== "undefined" && o[Symbol.iterator] || o["@@iterator"];
+    if (it) return (it = it.call(o)).next.bind(it);
+    if (Array.isArray(o) || (it = _unsupportedIterableToArray(o)) || allowArrayLike && o && typeof o.length === "number") {
+      if (it) o = it;
+      var i = 0;
+      return function () {
+        if (i >= o.length) return {
+          done: true
+        };
+        return {
+          done: false,
+          value: o[i++]
+        };
+      };
+    }
+    throw new TypeError("Invalid attempt to iterate non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method.");
+  }
+
   // Default settings
   var settings = {
     // Default selector
@@ -203,38 +235,6 @@
     }
   };
 
-  function _unsupportedIterableToArray(o, minLen) {
-    if (!o) return;
-    if (typeof o === "string") return _arrayLikeToArray(o, minLen);
-    var n = Object.prototype.toString.call(o).slice(8, -1);
-    if (n === "Object" && o.constructor) n = o.constructor.name;
-    if (n === "Map" || n === "Set") return Array.from(o);
-    if (n === "Arguments" || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(n)) return _arrayLikeToArray(o, minLen);
-  }
-  function _arrayLikeToArray(arr, len) {
-    if (len == null || len > arr.length) len = arr.length;
-    for (var i = 0, arr2 = new Array(len); i < len; i++) arr2[i] = arr[i];
-    return arr2;
-  }
-  function _createForOfIteratorHelperLoose(o, allowArrayLike) {
-    var it = typeof Symbol !== "undefined" && o[Symbol.iterator] || o["@@iterator"];
-    if (it) return (it = it.call(o)).next.bind(it);
-    if (Array.isArray(o) || (it = _unsupportedIterableToArray(o)) || allowArrayLike && o && typeof o.length === "number") {
-      if (it) o = it;
-      var i = 0;
-      return function () {
-        if (i >= o.length) return {
-          done: true
-        };
-        return {
-          done: false,
-          value: o[i++]
-        };
-      };
-    }
-    throw new TypeError("Invalid attempt to iterate non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method.");
-  }
-
   // Instances storage
   var instances = {};
 
@@ -372,6 +372,31 @@
       node = node.firstChild;
     }
     return node;
+  }
+
+  /**
+   * Find WYSIWYG editor instances.
+   * @param {string} selector One or more selectors pointing to textarea fields.
+   */
+  function findEditorInstances(selector) {
+    var editorInstances = [];
+    getTargetElements(selector).forEach(function (textarea) {
+      var wrapper = textarea.previousElementSibling;
+      if (wrapper && hasClass(wrapper, 'wysi-wrapper')) {
+        var children = wrapper.children;
+        var toolbar = children[0];
+        var editor = children[1];
+        var instanceId = getInstanceId(editor);
+        editorInstances.push({
+          textarea: textarea,
+          wrapper: wrapper,
+          toolbar: toolbar,
+          editor: editor,
+          instanceId: instanceId
+        });
+      }
+    });
+    return editorInstances;
   }
 
   /**
@@ -1839,18 +1864,55 @@
   }
 
   /**
+   * Update the content of a WYSIWYG editor instance.
+   * @param {object} textarea The textarea eleement.
+   * @param {object} editor The editable region.
+   * @param {string} instanceId The id of the instance.
+   * @param {string} rawContent The new unfiltered content of the instance.
+   * @param {boolean} setEditorContent Whether to update the content of the editable region.
+   */
+  function updateContent(textarea, editor, instanceId, rawContent, setEditorContent) {
+    var instance = instances[instanceId];
+    var content = prepareContent(rawContent, instance.allowedTags);
+    var onChange = instance.onChange;
+    if (setEditorContent === true) {
+      editor.innerHTML = content;
+    }
+    textarea.value = content;
+    dispatchEvent(textarea, 'change');
+    if (onChange) {
+      onChange(content);
+    }
+  }
+
+  /**
    * Destroy a WYSIWYG editor instance.
    * @param {string} selector One or more selectors pointing to textarea fields.
    */
   function destroy(selector) {
-    document.querySelectorAll(selector).forEach(function (field) {
-      var sibling = field.previousElementSibling;
-      if (sibling && hasClass(sibling, 'wysi-wrapper')) {
-        var instanceId = getInstanceId(sibling.lastChild);
-        delete instances[instanceId];
-        sibling.remove();
-      }
-    });
+    var editorInstances = findEditorInstances(selector);
+    for (var _iterator = _createForOfIteratorHelperLoose(editorInstances), _step; !(_step = _iterator()).done;) {
+      var editorInstance = _step.value;
+      var instanceId = editorInstance.instanceId,
+        wrapper = editorInstance.wrapper;
+      delete instances[instanceId];
+      wrapper.remove();
+    }
+  }
+
+  /**
+   * Set the content of a WYSIWYG editor instance programmatically.
+   * @param {string} selector One or more selectors pointing to textarea fields.
+   */
+  function setContent(selector, content) {
+    var editorInstances = findEditorInstances(selector);
+    for (var _iterator2 = _createForOfIteratorHelperLoose(editorInstances), _step2; !(_step2 = _iterator2()).done;) {
+      var editorInstance = _step2.value;
+      var textarea = editorInstance.textarea,
+        editor = editorInstance.editor,
+        instanceId = editorInstance.instanceId;
+      updateContent(textarea, editor, instanceId, content, true);
+    }
   }
 
   /**
@@ -1917,13 +1979,8 @@
       var editor = event.target;
       var textarea = editor.parentNode.nextElementSibling;
       var instanceId = getInstanceId(editor);
-      var onChange = instances[instanceId].onChange;
-      var content = prepareContent(editor.innerHTML, instances[instanceId].allowedTags, true);
-      textarea.value = content;
-      dispatchEvent(textarea, 'change');
-      if (onChange) {
-        onChange(content);
-      }
+      var content = editor.innerHTML;
+      updateContent(textarea, editor, instanceId, content);
     });
 
     // Clean up pasted content
@@ -1933,7 +1990,8 @@
   // Expose Wysi to the global scope
   window.Wysi = function () {
     var methods = {
-      destroy: destroy
+      destroy: destroy,
+      setContent: setContent
     };
     function Wysi(options) {
       DOMReady(function () {
