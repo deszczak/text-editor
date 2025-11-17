@@ -138,6 +138,31 @@ function configure(instance, options) {
 }
 
 /**
+ * Update the content of a WYSIWYG editor instance.
+ * @param {object} textarea The textarea eleement.
+ * @param {object} editor The editable region.
+ * @param {string} instanceId The id of the instance.
+ * @param {string} rawContent The new unfiltered content of the instance.
+ * @param {boolean} setEditorContent Whether to update the content of the editable region.
+ */
+function updateContent(textarea, editor, instanceId, rawContent, setEditorContent) {
+  const instance = instances[instanceId];
+  const content = prepareContent(rawContent, instance.allowedTags);
+  const onChange = instance.onChange;
+
+  if (setEditorContent === true) {
+    editor.innerHTML = content;
+  }
+
+  textarea.value = content;
+  dispatchEvent(textarea, 'change');
+
+  if (onChange) {
+    onChange(content);
+  }
+}
+
+/**
  * Destroy a WYSIWYG editor instance.
  * @param {string} selector One or more selectors pointing to textarea fields.
  */
@@ -149,6 +174,20 @@ function destroy(selector) {
 
     delete instances[instanceId];
     wrapper.remove();
+  }
+}
+
+/**
+ * Set the content of a WYSIWYG editor instance programmatically.
+ * @param {string} selector One or more selectors pointing to textarea fields.
+ */
+function setContent(selector, content) {
+  const editorInstances = findEditorInstances(selector);
+
+  for (const editorInstance of editorInstances) {
+    const { textarea, editor, instanceId } = editorInstance;
+
+    updateContent(textarea, editor, instanceId, content, true);
   }
 }
 
@@ -216,15 +255,9 @@ function bootstrap() {
     const editor = event.target;
     const textarea = editor.parentNode.nextElementSibling;
     const instanceId = getInstanceId(editor);
-    const onChange = instances[instanceId].onChange;
-    const content = prepareContent(editor.innerHTML, instances[instanceId].allowedTags, true);
+    const content = editor.innerHTML;
 
-    textarea.value = content;
-    dispatchEvent(textarea, 'change');
-
-    if (onChange) {
-      onChange(content);
-    }
+    updateContent(textarea, editor, instanceId, content);
   });
 
   // Clean up pasted content
@@ -234,7 +267,8 @@ function bootstrap() {
 // Expose Wysi to the global scope
 window.Wysi = (() => {
   const methods = {
-    destroy: destroy
+    destroy,
+    setContent
   };
 
   function Wysi(options) {
