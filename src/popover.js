@@ -315,7 +315,6 @@ function closePopover(ignoreSelection) {
 addListener(document, 'click', '.wysi-popover > button', event => {
   closePopover();
   openPopover(event.target);
-  event.stopImmediatePropagation();
 });
 
 // On key press on the popover button

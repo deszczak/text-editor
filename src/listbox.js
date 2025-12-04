@@ -122,7 +122,6 @@ function closeListBox() {
 addListener(document, 'click', '.wysi-listbox > button', event => {
   closeListBox();
   openListBox(event.target);
-  event.stopImmediatePropagation();
 });
 
 // On key press on the list box button
@@ -204,9 +203,17 @@ addListener(document, 'keydown', '.wysi-listbox > div > button', event => {
   }
 });
 
+let isOpeningInProgress = false;
+
 // Close open popups and dropdowns on click outside
 addListener(document, 'click', event => {
-  closeListBox();
+  if (!isOpeningInProgress) {
+    closeListBox();
+  }
 });
+
+// This prevents closing a listbox immediately after opening it
+addListener(document, 'mousedown', '.wysi-listbox > button', event => isOpeningInProgress = true);
+addListener(document, 'mouseup', event => setTimeout(() => { isOpeningInProgress = false; }));
 
 export { renderListBox, selectListBoxItem };
