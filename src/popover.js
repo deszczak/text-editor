@@ -366,6 +366,7 @@ addListener(document, 'keydown', '.wysi-popover *', event => {
       break;
     case 'Escape':
       closePopover();
+      event.stopImmediatePropagation();
       break;
   }
 

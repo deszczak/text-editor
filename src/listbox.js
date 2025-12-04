@@ -200,6 +200,7 @@ addListener(document, 'keydown', '.wysi-listbox > div > button', event => {
 
   if (preventDefault) {
     event.preventDefault();
+    event.stopImmediatePropagation();
   }
 });
 
