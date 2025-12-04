@@ -33,6 +33,11 @@ export default {
       attributes: [],
       styles: [],
       isEmpty: true
+    },
+    p: {
+      attributes: [],
+      styles: [],
+      isEmpty: false
     }
   },
 
