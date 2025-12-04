@@ -62,6 +62,11 @@
         attributes: [],
         styles: [],
         isEmpty: true
+      },
+      p: {
+        attributes: [],
+        styles: [],
+        isEmpty: false
       }
     },
     // Custom tags to allow when filtering inserted content
@@ -778,7 +783,6 @@
   addListener(document, 'click', '.wysi-listbox > button', function (event) {
     closeListBox();
     openListBox(event.target);
-    event.stopImmediatePropagation();
   });
 
   // On key press on the list box button
@@ -849,12 +853,26 @@
     }
     if (preventDefault) {
       event.preventDefault();
+      event.stopImmediatePropagation();
     }
   });
+  var isOpeningInProgress = false;
 
   // Close open popups and dropdowns on click outside
   addListener(document, 'click', function (event) {
-    closeListBox();
+    if (!isOpeningInProgress) {
+      closeListBox();
+    }
+  });
+
+  // This prevents closing a listbox immediately after opening it
+  addListener(document, 'mousedown', '.wysi-listbox > button', function (event) {
+    return isOpeningInProgress = true;
+  });
+  addListener(document, 'mouseup', function (event) {
+    return setTimeout(function () {
+      isOpeningInProgress = false;
+    });
   });
 
   // Used to give form fields unique ids
@@ -1149,7 +1167,19 @@
   addListener(document, 'click', '.wysi-popover > button', function (event) {
     closePopover();
     openPopover(event.target);
-    event.stopImmediatePropagation();
+  });
+
+  // On key press on the popover button
+  addListener(document, 'keydown', '.wysi-popover > button', function (event) {
+    switch (event.key) {
+      case 'ArrowUp':
+      case 'ArrowDown':
+      case 'Enter':
+      case ' ':
+        openPopover(event.target);
+        event.preventDefault();
+        break;
+    }
   });
 
   // Execute the popover action
@@ -1197,6 +1227,7 @@
         break;
       case 'Escape':
         closePopover();
+        event.stopImmediatePropagation();
         break;
     }
   });
