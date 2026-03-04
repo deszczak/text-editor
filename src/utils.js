@@ -476,15 +476,6 @@ export function removeAllInSelection(selection, tag) {
 export function copyToClipboard(text) {
   if (navigator.clipboard && navigator.clipboard.writeText) {
     navigator.clipboard.writeText(text).then(() => {
-      // Show brief visual feedback
-      const editor = document.querySelector('.wysi-editor:focus') || document.querySelector('.wysi-editor');
-      if (editor) {
-        const originalOutline = editor.style.outline;
-        editor.style.outline = '2px solid #4caf50';
-        setTimeout(() => {
-          editor.style.outline = originalOutline;
-        }, 500);
-      }
     }).catch(err => {
       console.error('Failed to copy to clipboard:', err);
     });

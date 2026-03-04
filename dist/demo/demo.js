@@ -9,8 +9,7 @@ Wysi({
     'bold', 'italic', 'underline', 'strike', 'highlight', '|',
     'ul', 'ol', '|',
     'link', 'hr', 'quote', '|',
-    'autoFormat', '|',
-    'removeFormat', '|',
+    'autoFormat', 'removeFormat', '|',
     'markdownExport'
   ],
   onChange: (content) => {
