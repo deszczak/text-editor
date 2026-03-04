@@ -1,6 +1,5 @@
 import document from 'document';
 import toolset from './toolset.js';
-import { renderListBox, selectListBoxItem } from './listbox.js';
 import { selectedClass } from './common.js';
 import { execAction } from './commands.js';
 import {
@@ -10,7 +9,7 @@ import {
   getCurrentSelection,
   getFragmentContent,
   getTranslation,
-  restoreSelection,
+  restoreCurrentSelection,
   setCurrentSelection,
   toggleButton
 } from './utils.js';
@@ -307,7 +306,7 @@ function closePopover(ignoreSelection) {
   }
 
   if (!ignoreSelection) {
-    restoreSelection();
+    restoreCurrentSelection();
   }
 }
 
@@ -337,7 +336,7 @@ addListener(document, 'click', '.wysi-popover > div > button[data-action]', even
 });
 
 // Cancel the popover
-addListener(document, 'click', '.wysi-popover > div > button:not([data-action])', event => {
+addListener(document, 'click', '.wysi-popover > div > button:not([data-action])', () => {
   closePopover();
 });
 
@@ -387,7 +386,7 @@ addListener(document, 'keydown', '.wysi-popover *', event => {
 let isSelectionInProgress = false;
 
 // Close open popups and dropdowns on click outside
-addListener(document, 'click', event => {
+addListener(document, 'click', () => {
   if (!isSelectionInProgress) {
     closePopover();
   }
@@ -395,12 +394,12 @@ addListener(document, 'click', event => {
 
 // Text selection within a popover is in progress
 // This helps avoid closing a popover when the end of a text selection is outside it
-addListener(document, 'mousedown', '.wysi-popover, .wysi-popover *', event => {
+addListener(document, 'mousedown', '.wysi-popover, .wysi-popover *', () => {
   isSelectionInProgress = true;
 });
 
 // The text selection ended
-addListener(document, 'mouseup', event => {
+addListener(document, 'mouseup', () => {
   setTimeout(() => { isSelectionInProgress = false; });
 });
 

@@ -1,11 +1,14 @@
 import document from 'document';
-import { hasClass } from './shortcuts.js';
+import { hasClass } from './shortcuts';
 
 // Used to store the current DOM selection for later use
 let currentSelection;
 
 // For storing translated strings
 let availableTranslations;
+
+// Unique marker ID counter
+let markerIdCounter = 0;
 
 // Polyfill for Nodelist.forEach
 if (NodeList !== undefined && NodeList.prototype && !NodeList.prototype.forEach) {
@@ -280,11 +283,90 @@ export function getTranslation(category, str) {
 /**
  * Restore a previous selection if any.
  */
-export function restoreSelection() {
+export function restoreCurrentSelection() {
   if (currentSelection) {
     setSelection(currentSelection);
     currentSelection = undefined;
   }
+}
+
+/**
+ * Create a unique marker element for selection boundaries.
+ * @return {Comment} A comment node to use as a marker.
+ */
+function createMarker() {
+  const script = document.createElement('script');
+  script.type = 'marker';
+  script.id = `mark-${markerIdCounter++}`;
+  return script;
+}
+
+/**
+ * Save the current selection by inserting temporary markers.
+ * This handles multi-node selections correctly by marking both start and end points.
+ * @param {Selection?} selection The selection to save (defaults to current selection).
+ * @return {Array} Array containing the start and end marker comment nodes.
+ */
+export function placeSelectionMarkers(selection) {
+  const sel = selection || document.getSelection();
+
+  if (!sel || !sel.rangeCount) return null;
+
+  const range = sel.getRangeAt(0);
+  const startMarker = createMarker();
+  const endMarker = createMarker();
+
+  // Safely place the markers with cloneRange
+  const startRange = range.cloneRange();
+  startRange.collapse(true);
+  startRange.insertNode(startMarker);
+  const endRange = range.cloneRange();
+  endRange.collapse(false);
+  endRange.insertNode(endMarker);
+
+  return [startMarker, endMarker];
+}
+
+/**
+ * Remove the specified tag.
+ * @param {HTMLElement} node Node to have the tag removed.
+ */
+export function removeTag(node) {
+  node.outerHTML = node.innerHTML;
+}
+
+/**
+ * Return new marker references.
+ * @param {HTMLScriptElement[]} markers Array of saved markers.
+ * @return {HTMLScriptElement[]} Array of new marker references.
+ */
+export function getNewMarkerReferences(markers) {
+  const m1 = document.getElementById(markers[0].id);
+  const m2 = document.getElementById(markers[1].id);
+  return [m1, m2];
+}
+
+/**
+ * Restore selection using marker elements.
+ * This properly restores multi-node selections.
+ * @param {HTMLScriptElement[]} markers The start marker comment node.
+ * @param {boolean} removeMarkers Whether to remove the markers after restoring (default: true).
+ */
+export function restoreSelection(markers, removeMarkers = true) {
+  if (markers.length !== 2) return;
+  const [s,e] = markers;
+
+  const selection = document.getSelection();
+  const range = selection.getRangeAt(0);
+
+  // Set range's start after the start marker
+  range.setStartAfter(s);
+  // Set range's end before the end marker
+  range.setEndBefore(e);
+  setSelection(range);
+
+  // Remove markers if requested
+  if (removeMarkers) { s.remove(); e.remove() }
 }
 
 /**

@@ -1,5 +1,17 @@
 Wysi({
   el: '#demo1',
-  height: 320,
-  onChange: content => console.log('Content updated: ', content)
+  darkMode: true,
+  height: 300,
+  autoGrow: true,
+  autoHide: false,
+  tools: [
+    'format', '|',
+    'bold', 'italic', 'underline', 'strike', 'highlight', '|',
+    'ul', 'ol', '|',
+    'link', 'hr', 'quote', '|',
+    'removeFormat'
+  ],
+  onChange: (content) => {
+    console.log('Content changed:', content);
+  }
 });

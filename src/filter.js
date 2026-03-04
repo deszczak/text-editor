@@ -1,10 +1,9 @@
-import settings from './settings.js';
-import toolset from './toolset.js';
-import { buildFragment, cloneObject, createElement } from './utils.js';
-import { blockElements } from './common.js';
+import settings from './settings';
+import toolset from './toolset';
+import { buildFragment, cloneObject, createElement } from './utils';
+import { blockElements } from './common';
 
 const STYLE_ATTRIBUTE = 'style';
-const ALIGN_ATTRIBUTE = 'align';
 
 /**
  * Enable HTML tags belonging to a set of tools.
@@ -69,8 +68,9 @@ function prepareContent(content, allowedTags, filterOnly) {
  * @param {object} node The element to replace.
  * @param {string} tag The HTML tag of the new element.
  * @param {boolean} [copyAttributes] If true, also copy the original element's attributes.
+ * @return {object} The new element/Node.
  */
-function replaceNode(node, tag, copyAttributes) {
+export function replaceNode(node, tag, copyAttributes) {
   const newElement = createElement(tag);
   const parentNode = node.parentNode;
   const attributes = node.attributes;
@@ -87,6 +87,8 @@ function replaceNode(node, tag, copyAttributes) {
 
   // Replace the element
   parentNode.replaceChild(newElement, node);
+
+  return newElement;
 }
 
 /**
@@ -109,9 +111,6 @@ function filterStyles(node, allowedStyles) {
     })
     // Filter the styles
     .filter(style => allowedStyles.includes(style.name))
-
-    // Remove text-align: left
-    .filter(style => style.name !== 'text-align' || style.value.trim() !== 'left')
 
     // Convert back to a style string
     .map(({ name, value }) => `${name}: ${value.trim()};`).join('');
@@ -147,8 +146,6 @@ function filterContent(node, allowedTags) {
       const allowedTag = allowedTags[tag];
       const attributes = Array.from(childNode.attributes);
 
-      // Check for the deprecated align attribute (mainly in Firefox)
-      const deprecatedAlignAttribute = childNode.getAttribute(ALIGN_ATTRIBUTE);
 
       if (allowedTag) {
         const allowedAttributes = allowedTag.attributes || [];
@@ -159,13 +156,6 @@ function filterContent(node, allowedTags) {
           const attributeName = attributes[i].name;
 
           if (!allowedAttributes.includes(attributes[i].name)) {
-            // Replace deprecated align attribute with text-align style
-            if (attributeName === ALIGN_ATTRIBUTE) {
-              if (deprecatedAlignAttribute !== 'left') {
-                childNode.style.textAlign = deprecatedAlignAttribute;
-              }
-            }
-
             if (attributeName === STYLE_ATTRIBUTE && allowedStyles.length) {
               filterStyles(childNode, allowedStyles);
             } else {
@@ -186,17 +176,6 @@ function filterContent(node, allowedTags) {
 
         // And unwrap the other nodes
         } else {
-          // Fix bad alignment handling on Firefox
-          if (deprecatedAlignAttribute !== null) {
-            if (childNode.parentNode && childNode.parentNode.tagName === 'LI') {
-              childNode.parentNode.style.textAlign = deprecatedAlignAttribute;
-            } else {
-              for (const divChild of childNode.childNodes) {
-                divChild.style.textAlign = deprecatedAlignAttribute;
-              }
-            }
-          }
-
           childNode.replaceWith(...childNode.childNodes);
         }
       }

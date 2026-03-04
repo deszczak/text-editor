@@ -12,8 +12,7 @@ import {
   findDeepestChildNode,
   findInstance,
   getInstanceId,
-  getTranslation,
-  setSelection
+  getTranslation
 } from './utils.js';
 
 /**
@@ -74,7 +73,7 @@ function renderTool(name, toolbar) {
     _innerHTML: `<svg><use href="#wysi-${name}"></use></svg>`
   });
 
-  // Tools that require parameters (e.g: image, link) need a popover
+  // Tools that require parameters (e.g: link) need a popover
   if (tool.hasForm) {
     const popover = renderPopover(name, button);
     toolbar.appendChild(popover);
@@ -156,7 +155,7 @@ function updateToolbarState() {
     return;
   }
 
-  // Check for an element with the selection class (likely an image)
+  // Check for an element with the selection class (likely a highlight)
   const selectedObject = editor.querySelector(`.${selectedClass}`);
 
   // If such element exists, add its tag to the list of active tags
@@ -175,7 +174,7 @@ function updateToolbarState() {
   toolbar.querySelectorAll('.wysi-listbox > div > button:first-of-type').forEach(button => selectListBoxItem(button));
 
   // Update the buttons states
-  tags.forEach((tag, i) => {
+  tags.forEach(tag => {
     switch (tag) {
       case 'p':
       case 'h1':
@@ -184,25 +183,7 @@ function updateToolbarState() {
       case 'h4':
       case 'li':
         const format = toolbar.querySelector(`[data-action="format"][data-option="${tag}"]`);
-        const textAlign = nodes[i].style.textAlign || nodes[i].getAttribute('align');
-
-        if (format) {
-          selectListBoxItem(format);
-        }
-
-        // Check for text align
-        if (textAlign) {
-          const action = 'align' + textAlign.charAt(0).toUpperCase() + textAlign.slice(1);
-          const button = toolbar.querySelector(`[data-action="${action}"]`);
-          
-          if (button) {
-            if (button.parentNode.getAttribute('role') === 'listbox') {
-              selectListBoxItem(button);
-            } else {
-              button.setAttribute('aria-pressed', 'true');
-            }
-          }
-        }
+        if (format) selectListBoxItem(format);
         break;
       default:
         const allowedTag = allowedTags[tag];
@@ -236,26 +217,22 @@ addListener(document, 'mousedown', '.wysi-editor, .wysi-editor *', event => {
   }
 });
 
-// Select an image when it's clicked
-addListener(document, 'mousedown', '.wysi-editor img', event => {
-  const image = event.target;
-  const range = document.createRange();
-
-  image.classList.add(selectedClass);
-
-  range.selectNode(image);
-  setSelection(range);
+// "Select" a highlight when it's clicked
+addListener(document, 'mousedown', '.wysi-editor span', event => {
+  const highlight = event.target;
+  highlight.classList.add(selectedClass);
 });
 
 // Toolbar button click
 addListener(document, 'click', '.wysi-toolbar > button', event => {
   const button = event.target;
+  const state = JSON.parse(button.getAttribute('aria-pressed'));
   const action = button.dataset.action;
   const { editor } = findInstance(button);
   const selection = document.getSelection();
 
   if (selection && editor.contains(selection.anchorNode)) {
-    execAction(action, editor);
+    execAction(action, editor, { state, selection });
   }
 });
 

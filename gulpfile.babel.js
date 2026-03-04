@@ -5,7 +5,8 @@ import { babel } from '@rollup/plugin-babel';
 import terser from '@rollup/plugin-terser';
 import replace from '@rollup/plugin-replace';
 import rename from 'gulp-rename';
-import cleanCSS from 'gulp-clean-css';
+import postcss from 'gulp-postcss';
+import cssnano from 'cssnano';
 
 const files = {
   js: './src/**/*.js',
@@ -69,7 +70,7 @@ const rollupOuputs = [
 
 function bundleJS() {
   return rollup(rollupInput).then(bundle => {
-    return new Promise(async function (resolve, reject) {
+    return new Promise(async function (resolve) {
       for (const output of rollupOuputs) {
         await bundle.write(output);
       }
@@ -80,7 +81,7 @@ function bundleJS() {
 
 function minifyCSS() {
   return src(files.css)
-    .pipe(cleanCSS())
+    .pipe(postcss([cssnano()]))
     .pipe(rename(function (path) {
       path.basename += '.min';
     }))
@@ -92,7 +93,7 @@ function copySourceCSS() {
 }
 
 function watchFiles() {
-  return new Promise(function (resolve, reject) {
+  return new Promise(function (resolve) {
     watch(files.js, bundleJS);
     watch(files.css, parallel(minifyCSS, copySourceCSS));
     resolve();

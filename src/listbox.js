@@ -1,6 +1,4 @@
 import document from 'document';
-import toolset from './toolset.js';
-import { instances } from './common.js';
 import { execAction } from './commands.js';
 import {
   addListener,
@@ -142,7 +140,7 @@ addListener(document.documentElement, 'mousemove', '.wysi-listbox > div > button
   event.target.focus();
 });
 
-// On click on an list box item
+// On click on a list box item
 addListener(document, 'click', '.wysi-listbox > div > button', event => {
   const item = event.target;
   const action = item.dataset.action;
@@ -206,14 +204,14 @@ addListener(document, 'keydown', '.wysi-listbox > div > button', event => {
 let isOpeningInProgress = false;
 
 // Close open popups and dropdowns on click outside
-addListener(document, 'click', event => {
+addListener(document, 'click', () => {
   if (!isOpeningInProgress) {
     closeListBox();
   }
 });
 
 // This prevents closing a listbox immediately after opening it
-addListener(document, 'mousedown', '.wysi-listbox > button', event => isOpeningInProgress = true);
-addListener(document, 'mouseup', event => setTimeout(() => { isOpeningInProgress = false; }));
+addListener(document, 'mousedown', '.wysi-listbox > button', () => isOpeningInProgress = true);
+addListener(document, 'mouseup', () => setTimeout(() => { isOpeningInProgress = false; }));
 
 export { renderListBox, selectListBoxItem };

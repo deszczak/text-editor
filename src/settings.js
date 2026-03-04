@@ -6,12 +6,11 @@ export default {
 
   // Default tools in the toolbar
   tools: [
-    'format', '|', 'bold', 'italic', '|', 
-    {
-      label: 'Text alignment',
-      items: ['alignLeft', 'alignCenter', 'alignRight', 'alignJustify']
-    }, '|',
-    'ul', 'ol', '|', 'indent', 'outdent', '|', 'link', 'image'
+    'format', '|',
+    'bold', 'italic', 'underline', 'strike', 'highlight', '|',
+    'ul', 'ol', '|',
+    'link', 'hr', 'quote', '|',
+    'removeFormat'
   ],
 
   // Enable dark mode (toolbar only)
