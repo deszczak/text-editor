@@ -13,10 +13,6 @@ body {
   margin: 0 auto;
 }
 
-.demo a {
-  color: #0000ee;
-}
-
 .demo > label {
   display: block;
   margin-bottom: 0.5em;

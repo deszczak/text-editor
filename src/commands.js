@@ -4,10 +4,13 @@ import {
   restoreSelection,
   removeTag,
   placeSelectionMarkers,
-  getNewMarkerReferences
+  getNewMarkerReferences,
+  getSelectedNodes,
+  removeAllInSelection
 } from './utils';
 import { execCommand } from './shortcuts';
-import {replaceNode} from "./filter";
+import { replaceNode } from "./filter";
+import { selectedClass } from "./common";
 
 /**
  * Execute an action.
@@ -91,44 +94,23 @@ export function execEditorCommand(command, options) {
           if (state) {
             revertState(command, selection);
             break;
+          } else {
+            const markers = placeSelectionMarkers(selection);
+            execCommand('hiliteColor', "#ffff00");
+            const nodes = getSelectedNodes();
+            nodes.forEach(n => n.tagName === 'SPAN' && replaceNode(n, 'mark').classList.add(selectedClass));
+            const newMarkers = getNewMarkerReferences(markers);
+            restoreSelection(newMarkers);
+            break;
           }
         }
-        execCommand('hiliteColor', '#ffff00');
+        console.log('Error when trying to highlight.')
         break;
 
     // All the other commands
     default:
       execCommand(command);
   }
-}
-
-/**
- * Remove all highlight spans within a selection range.
- * @param {Selection} selection The selection containing highlighted content.
- * @param {string} tag The tag name of the element to remove.
- */
-function removeAllInSelection(selection, tag) {
-  const range = selection.getRangeAt(0);
-  const commonAncestor = range.commonAncestorContainer;
-  const nodeIsElement = commonAncestor.nodeType === Node.ELEMENT_NODE;
-
-  // Get the container element to search for tags
-  const container = nodeIsElement ? commonAncestor
-    : commonAncestor.parentElement;
-
-  // Find all elements and filter the ones that intersect with the selection
-  const elsToRemove = Array
-    .from(container.querySelectorAll(tag))
-    .filter(el => range.intersectsNode(el));
-
-  // Remove all collected elements
-  if (!elsToRemove.length && container.tagName === tag) {
-    removeTag(container);
-  } else elsToRemove.forEach(el => {
-    if (el.parentElement.classList.contains('wysi-editor')) {
-      replaceNode(el, 'p');
-    } else removeTag(el)
-  });
 }
 
 /**
@@ -146,7 +128,7 @@ export function revertState(command, selection) {
 
   switch (command) {
     case 'highlight':
-      removeAllInSelection(selection, 'SPAN');
+      removeAllInSelection(selection, 'MARK');
       break;
     case 'quote':
       removeAllInSelection(selection, 'BLOCKQUOTE');
@@ -161,5 +143,5 @@ export function revertState(command, selection) {
 
   // Restore selection using the markers
   restoreSelection(newMarkerReferences);
-  document.querySelector('.wysi-editor').dispatchEvent(new Event('input'));
+  // document.querySelector('.wysi-editor').dispatchEvent(new Event('input'));
 }

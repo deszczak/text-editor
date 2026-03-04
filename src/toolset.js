@@ -11,7 +11,7 @@ export default {
     label: 'Quote'
   },
   highlight: {
-    tags: ['span'],
+    tags: ['mark'],
     label: 'Highlight',
   },
   bold: {

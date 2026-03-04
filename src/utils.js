@@ -1,5 +1,6 @@
 import document from 'document';
 import { hasClass } from './shortcuts';
+import { replaceNode } from "./filter";
 
 // Used to store the current DOM selection for later use
 let currentSelection;
@@ -309,7 +310,6 @@ function createMarker() {
  */
 export function placeSelectionMarkers(selection) {
   const sel = selection || document.getSelection();
-
   if (!sel || !sel.rangeCount) return null;
 
   const range = sel.getRangeAt(0);
@@ -403,4 +403,68 @@ export function storeTranslations(translations) {
  */
 export function toggleButton(button, expanded) {
   button.setAttribute('aria-expanded', expanded);
+}
+
+/**
+ * Get all selected nodes.
+ * @param {Selection?} selection The selection to get nodes from.
+ * @return {array} The selected nodes.
+ */
+export function getSelectedNodes(selection) {
+  const sel = selection || document.getSelection();
+  if (!sel || !sel.rangeCount) return [];
+
+  const range = sel.getRangeAt(0);
+  const container = range.commonAncestorContainer;
+  const nodes = [];
+
+  const walker = document.createTreeWalker(
+    container.nodeType === Node.ELEMENT_NODE ? container : container.parentElement,
+    NodeFilter.SHOW_ALL,
+    {
+      acceptNode: (node) => {
+        return range.intersectsNode(node)
+          ? NodeFilter.FILTER_ACCEPT
+          : NodeFilter.FILTER_REJECT;
+      }
+    }
+  );
+
+  let currentNode = walker.currentNode;
+
+  while (currentNode) {
+    if (range.intersectsNode(currentNode) && currentNode !== container) nodes.push(currentNode);
+    currentNode = walker.nextNode();
+  }
+
+  return nodes;
+}
+
+/**
+ * Remove all tags within a selection range.
+ * @param {Selection} selection The selection containing highlighted content.
+ * @param {string} tag The tag name of the element to remove.
+ */
+export function removeAllInSelection(selection, tag) {
+  const range = selection.getRangeAt(0);
+  const commonAncestor = range.commonAncestorContainer;
+  const nodeIsElement = commonAncestor.nodeType === Node.ELEMENT_NODE;
+
+  // Get the container element to search for tags
+  const container = nodeIsElement ? commonAncestor
+    : commonAncestor.parentElement;
+
+  // Find all elements and filter the ones that intersect with the selection
+  const elsToRemove = Array
+    .from(container.querySelectorAll(tag))
+    .filter(el => range.intersectsNode(el));
+
+  // Remove all collected elements
+  if (!elsToRemove.length && container.tagName === tag) {
+    removeTag(container);
+  } else elsToRemove.forEach(el => {
+    if (el.parentElement.classList.contains('wysi-editor')) {
+      replaceNode(el, 'p');
+    } else removeTag(el)
+  });
 }

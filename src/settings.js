@@ -13,9 +13,6 @@ export default {
     'removeFormat'
   ],
 
-  // Enable dark mode (toolbar only)
-  darkMode: false,
-
   // Height of the editable region
   height: 200,
 

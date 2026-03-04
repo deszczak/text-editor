@@ -218,7 +218,7 @@ addListener(document, 'mousedown', '.wysi-editor, .wysi-editor *', event => {
 });
 
 // "Select" a highlight when it's clicked
-addListener(document, 'mousedown', '.wysi-editor span', event => {
+addListener(document, 'mousedown', '.wysi-editor mark', event => {
   const highlight = event.target;
   highlight.classList.add(selectedClass);
 });

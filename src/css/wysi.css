@@ -1,63 +1,59 @@
 :root {
+  /* Enable automatic color scheme support */
+  color-scheme: light dark;
+
   /* Primary theme colors */
   --wysi-primary: #027ffe;
   --wysi-hover: #0266cb;
   --wysi-highlight: #cce5ff;
 
   /* Outline colors */
-  --wysi-outline-color: rgb(160 160 160 / .3);
-  --wysi-outline-color-dark: #111;
+  --wysi-outline-color: light-dark(rgb(160 160 160 / .3), #111);
 
   /* Toolbar colors */
-  --wysi-toolbar-bg: #eee;
-  --wysi-toolbar-bg-dark: #222;
+  --wysi-toolbar-bg: light-dark(#eee, #222);
+  --wysi-toolbar-color: light-dark(#333, #fff);
 
   /* Button colors */
-  --wysi-button-color: #444;
-  --wysi-button-color-dark: #ddd;
-  --wysi-button-hover-bg: #fff;
-  --wysi-button-hover-bg-dark: #444;
+  --wysi-button-color: light-dark(#444, #ddd);
+  --wysi-button-hover-bg: light-dark(#fff, #444);
 
   /* Dropdown/Listbox colors */
-  --wysi-dropdown-bg: #fff;
-  --wysi-dropdown-bg-dark: #444;
-  --wysi-dropdown-item-focus-bg: #eee;
-  --wysi-dropdown-item-focus-bg-dark: #222;
+  --wysi-dropdown-bg: light-dark(#fff, #444);
+  --wysi-dropdown-item-focus-bg: light-dark(#eee, #222);
 
   /* Popover colors */
-  --wysi-popover-bg: #fff;
-  --wysi-popover-bg-dark: #444;
-  --wysi-popover-arrow-color: #fff;
-  --wysi-popover-arrow-color-dark: #444;
+  --wysi-popover-bg: light-dark(#fff, #444);
+  --wysi-popover-arrow-color: light-dark(#fff, #444);
 
   /* Popover button colors */
   --wysi-popover-button-border: #ccc;
   --wysi-popover-button-hover-bg: #ddd;
-  --wysi-popover-button-text-dark: #444;
+  --wysi-popover-button-text: light-dark(#333, #ddd);
 
   /* Primary action button (popover) */
   --wysi-primary-button-color: #fff;
 
   /* Input colors */
   --wysi-input-border: #ccc;
-  --wysi-input-color: #444;
-  --wysi-input-color-dark: #eee;
+  --wysi-input-color: light-dark(#444, #eee);
   --wysi-segmented-checked-color: #333;
 
   /* Separator colors */
-  --wysi-separator-color: #ccc;
-  --wysi-separator-color-dark: #444;
+  --wysi-separator-color: light-dark(#ccc, #444);
 
   /* Editor colors */
-  --wysi-editor-blockquote-border: #ccc;
-  --wysi-editor-hr-color: #ccc;
+  --wysi-editor-bg: light-dark(#fff, #1a1a1a);
+  --wysi-editor-color: light-dark(#333, #eee);
+  --wysi-editor-link-color: light-dark(#027ffe, #4da3ff);
+  --wysi-editor-highlight-color: light-dark(#ffff00, #735600);
+  --wysi-editor-highlight-color-selected: light-dark(#e0e070, #4d431c);
+  --wysi-editor-blockquote-border: light-dark(#ccc, #555);
+  --wysi-editor-hr-color: light-dark(#ccc, #555);
 
   /* Shadow colors */
   --wysi-shadow-color: rgb(0 0 0 / .15);
   --wysi-popover-shadow-color: rgb(0 0 0 / .2);
-
-  /* Dark mode text colors */
-  --wysi-text-color-dark: #fff;
 }
 
 #wysi-svg-icons {
@@ -93,6 +89,7 @@
   z-index: 1;
   padding: 5px;
   border-radius: 5px 5px 0 0;
+  color: var(--wysi-toolbar-color);
   background-color: var(--wysi-toolbar-bg);
   box-sizing: border-box;
 
@@ -132,11 +129,6 @@
     &[aria-pressed="true"] {
       color: var(--wysi-primary);
       background-color: var(--wysi-highlight);
-
-      &:hover {
-        background-color: var(--wysi-highlight);
-        mix-blend-mode: multiply;
-      }
     }
 
     & * {
@@ -424,11 +416,30 @@
   min-height: 200px;
   max-height: 200px;
   padding: 1em;
+  color: var(--wysi-editor-color);
+  background-color: var(--wysi-editor-bg);
   outline: none;
   overflow: auto;
 
   & > :first-child {
     margin-top: 0;
+  }
+
+  mark {
+    background-color: var(--wysi-editor-highlight-color);
+    color: inherit;
+    &::selection {
+      background-color: var(--wysi-editor-highlight-color-selected)!important;
+    }
+  }
+
+  a {
+    color: var(--wysi-editor-link-color);
+    text-decoration: underline;
+
+    &:hover {
+      text-decoration: none;
+    }
   }
 
   blockquote {
@@ -449,63 +460,4 @@
   max-height: none !important;
 }
 
-/** Dark mode **/
-.wysi-darkmode {
-  .wysi-listbox {
-    button[aria-expanded="true"] {
-      background-color: var(--wysi-button-hover-bg-dark);
-    }
 
-    div {
-      background-color: var(--wysi-dropdown-bg-dark);
-
-      button:focus {
-        background-color: var(--wysi-dropdown-item-focus-bg-dark);
-      }
-    }
-  }
-
-  .wysi-popover {
-    div {
-      background-color: var(--wysi-popover-bg-dark);
-
-      &::before {
-        border-bottom-color: var(--wysi-popover-arrow-color-dark);
-      }
-
-      button:not(:last-of-type):is(:hover, :focus) {
-        color: var(--wysi-popover-button-text-dark);
-      }
-    }
-
-    input {
-      color: var(--wysi-input-color-dark);
-    }
-  }
-
-  .wysi-toolbar {
-    color: var(--wysi-text-color-dark);
-    background-color: var(--wysi-toolbar-bg-dark);
-
-    button:not([aria-pressed="true"]) {
-      color: var(--wysi-button-color-dark);
-    }
-
-    button[aria-pressed="true"]:hover {
-      background-color: var(--wysi-highlight);
-      mix-blend-mode: difference;
-    }
-
-    :is(& > button, & > div > button):is(:hover, :focus) {
-      background-color: var(--wysi-button-hover-bg-dark);
-    }
-  }
-
-  .wysi-separator {
-    border-color: var(--wysi-separator-color-dark);
-  }
-}
-
-.wysi-autohide.wysi-darkmode:focus-within .wysi-toolbar {
-  outline-color: var(--wysi-outline-color-dark);
-}

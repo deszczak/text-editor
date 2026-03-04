@@ -118,7 +118,6 @@ function configure(instance, options) {
 
   for (const key in options) {
     switch (key) {
-      case 'darkMode':
       case 'autoGrow':
       case 'autoHide':
         instance.classList.toggle(`wysi-${key.toLowerCase()}`, !!options[key]);
@@ -180,6 +179,7 @@ function destroy(selector) {
 /**
  * Set the content of a WYSIWYG editor instance programmatically.
  * @param {string} selector One or more selectors pointing to textarea fields.
+ * @param {string} content The new content of the editor instance.
  */
 function setContent(selector, content) {
   const editorInstances = findEditorInstances(selector);
