@@ -80,5 +80,9 @@ export default {
   autoFormat: {
     label: 'Auto format text',
     command: 'autoFormat'
+  },
+  markdownExport: {
+    label: 'Copy as Markdown',
+    command: 'markdownExport'
   }
 };

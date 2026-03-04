@@ -6,12 +6,14 @@ import {
   placeSelectionMarkers,
   getNewMarkerReferences,
   getSelectedNodes,
-  removeAllInSelection
+  removeAllInSelection,
+  copyToClipboard
 } from './utils';
 import { execCommand } from './shortcuts';
 import { replaceNode } from "./filter";
 import { selectedClass } from "./common";
 import { formatTextNodes } from './autoFormat';
+import { htmlToMarkdown } from './markdown';
 
 /**
  * Execute an action.
@@ -120,6 +122,14 @@ export function execEditorCommand(command, options) {
       }
 
       if (container) formatTextNodes(container);
+      break;
+
+    case 'markdownExport':
+      const editor = document.querySelector('.wysi-editor:focus') || document.querySelector('.wysi-editor');
+      if (editor) {
+        const markdown = htmlToMarkdown(editor);
+        copyToClipboard(markdown);
+      }
       break;
 
     // All the other commands

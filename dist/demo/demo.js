@@ -10,7 +10,8 @@ Wysi({
     'ul', 'ol', '|',
     'link', 'hr', 'quote', '|',
     'autoFormat', '|',
-    'removeFormat'
+    'removeFormat', '|',
+    'markdownExport'
   ],
   onChange: (content) => {
     console.log('Content changed:', content);
