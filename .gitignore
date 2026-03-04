@@ -1,7 +1,2 @@
 .DS_Store
 node_modules/
-/dist/wysi.js
-/dist/wysi.min.js
-/dist/wysi.min.js.map
-/dist/wysi.css
-/dist/wysi.min.css
