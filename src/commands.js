@@ -11,6 +11,7 @@ import {
 import { execCommand } from './shortcuts';
 import { replaceNode } from "./filter";
 import { selectedClass } from "./common";
+import { formatTextNodes } from './autoFormat';
 
 /**
  * Execute an action.
@@ -106,6 +107,20 @@ export function execEditorCommand(command, options) {
         }
         console.log('Error when trying to highlight.')
         break;
+
+    case 'autoFormat':
+      const sel = document.getSelection();
+      let container;
+
+      if (sel.rangeCount > 0 && !sel.isCollapsed) {
+        container = sel.getRangeAt(0).commonAncestorContainer;
+        if (container.nodeType !== Node.ELEMENT_NODE) container = container.parentElement;
+      } else {
+        container = document.querySelector('.wysi-editor:focus') || document.querySelector('.wysi-editor');
+      }
+
+      if (container) formatTextNodes(container);
+      break;
 
     // All the other commands
     default:

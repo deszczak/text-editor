@@ -10,6 +10,7 @@ export default {
     'bold', 'italic', 'underline', 'strike', 'highlight', '|',
     'ul', 'ol', '|',
     'link', 'hr', 'quote', '|',
+    'autoFormat', '|',
     'removeFormat'
   ],
 

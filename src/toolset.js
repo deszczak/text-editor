@@ -76,5 +76,9 @@ export default {
   },
   unlink: {
     label: 'Remove link'
+  },
+  autoFormat: {
+    label: 'Auto format text',
+    command: 'autoFormat'
   }
 };
