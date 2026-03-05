@@ -495,3 +495,37 @@ export function copyToClipboard(text) {
     document.body.removeChild(textarea);
   }
 }
+
+/**
+ * Show a toast notification message.
+ * @param {string} message The message to display.
+ * @param {HTMLElement} editor The editor element to position the toast relative to.
+ */
+export function showToast(message, editor) {
+  // Remove any existing toast
+  const existingToast = document.querySelector('.wysi-toast');
+  if (existingToast) {
+    existingToast.remove();
+  }
+
+  // Create toast element
+  const toast = document.createElement('div');
+  toast.className = 'wysi-toast';
+  toast.textContent = message;
+
+  // Find the editor wrapper or use the editor itself
+  const wrapper = editor?.closest('.wysi-wrapper') || editor;
+  if (wrapper) wrapper.appendChild(toast);
+  else document.body.appendChild(toast);
+
+  // Trigger animation
+  requestAnimationFrame(() => toast.classList.add('wysi-toast--visible'));
+
+  // Remove after delay
+  setTimeout(() => {
+    toast.classList.remove('wysi-toast--visible');
+    setTimeout(() => {
+      toast.remove();
+    }, 300);
+  }, 2000);
+}

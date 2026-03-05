@@ -460,4 +460,27 @@
   max-height: none !important;
 }
 
+/** Toast notification **/
+.wysi-toast {
+  position: absolute;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  padding: 10px 20px;
+  border-radius: 5px;
+  background-color: var(--wysi-toolbar-bg);
+  color: var(--wysi-toolbar-color);
+  font-size: .875em;
+  box-shadow: 0 4px 12px var(--wysi-shadow-color);
+  opacity: 0;
+  transition: opacity 0.3s ease, transform 0.3s ease;
+  z-index: 100;
+  pointer-events: none;
+}
+
+.wysi-toast--visible {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
 

@@ -7,7 +7,8 @@ import {
   getNewMarkerReferences,
   getSelectedNodes,
   removeAllInSelection,
-  copyToClipboard
+  copyToClipboard,
+  showToast
 } from './utils';
 import { execCommand } from './shortcuts';
 import { replaceNode } from "./filter";
@@ -18,7 +19,7 @@ import { htmlToMarkdown } from './markdown';
 /**
  * Execute an action.
  * @param {string} action The action to execute.
- * @param {object} editor The editor instance.
+ * @param {HTMLElement} editor The editor instance.
  * @param {array || object} options Optional action parameters.
  */
 export function execAction(action, editor, options = []) {
@@ -31,7 +32,7 @@ export function execAction(action, editor, options = []) {
     restoreCurrentSelection();
 
     // Execute the tool's action
-    execEditorCommand(command, options);
+    execEditorCommand(editor, command, options);
     editor.normalize();
 
     // Focus the editor instance
@@ -41,10 +42,11 @@ export function execAction(action, editor, options = []) {
 
 /**
  * Execute an editor command.
+ * @param {Element} editor The editor instance.
  * @param {string} command The command to execute.
  * @param {array || object} options Optional command parameters.
  */
-export function execEditorCommand(command, options) {
+export function execEditorCommand(editor, command, options) {
   switch (command) {
     // Block level formatting
     case 'quote':
@@ -107,7 +109,7 @@ export function execEditorCommand(command, options) {
             break;
           }
         }
-        console.log('Error when trying to highlight.')
+        console.error('Error when trying to highlight.')
         break;
 
     case 'autoFormat':
@@ -117,18 +119,25 @@ export function execEditorCommand(command, options) {
       if (sel.rangeCount > 0 && !sel.isCollapsed) {
         container = sel.getRangeAt(0).commonAncestorContainer;
         if (container.nodeType !== Node.ELEMENT_NODE) container = container.parentElement;
-      } else {
-        container = document.querySelector('.wysi-editor:focus') || document.querySelector('.wysi-editor');
       }
 
-      if (container) formatTextNodes(container);
+      formatTextNodes(container || editor);
+      showToast('Formatted Text', editor);
       break;
 
     case 'markdownExport':
-      const editor = document.querySelector('.wysi-editor:focus') || document.querySelector('.wysi-editor');
       if (editor) {
         const markdown = htmlToMarkdown(editor);
         copyToClipboard(markdown);
+        showToast('Markdown copied to clipboard', editor);
+      }
+      break;
+
+    case 'removeFormat':
+      const { selection } = options;
+      execCommand(command);
+      if (editor && selection.type === 'Range') {
+        showToast('Formatting removed', editor);
       }
       break;
 
