@@ -1,7 +1,7 @@
 import toolset from './toolset';
 import {
   restoreCurrentSelection,
-  restoreSelection,
+  restoreMarkerSelection,
   removeTag,
   placeSelectionMarkers,
   getNewMarkerReferences,
@@ -15,6 +15,7 @@ import { replaceNode } from "./filter";
 import { selectedClass } from "./common";
 import { formatTextNodes } from './autoFormat';
 import { htmlToMarkdown } from './markdown';
+import { saveState } from './undoRedo';
 
 /**
  * Execute an action.
@@ -24,12 +25,15 @@ import { htmlToMarkdown } from './markdown';
  */
 export function execAction(action, editor, options = []) {
   const tool = toolset[action];
-  
+
   if (tool) {
     const command = tool.command || action;
 
     // Restore selection if any
     restoreCurrentSelection();
+
+    // Save state before executing the action (for undo)
+    saveState(editor);
 
     // Execute the tool's action
     execEditorCommand(editor, command, options);
@@ -105,7 +109,7 @@ export function execEditorCommand(editor, command, options) {
             const nodes = getSelectedNodes();
             nodes.forEach(n => n.tagName === 'SPAN' && replaceNode(n, 'mark').classList.add(selectedClass));
             const newMarkers = getNewMarkerReferences(markers);
-            restoreSelection(newMarkers);
+            restoreMarkerSelection(newMarkers);
             break;
           }
         }
@@ -176,6 +180,5 @@ export function revertState(command, selection) {
   const newMarkerReferences = getNewMarkerReferences(markers);
 
   // Restore selection using the markers
-  restoreSelection(newMarkerReferences);
-  // document.querySelector('.wysi-editor').dispatchEvent(new Event('input'));
+  restoreMarkerSelection(newMarkerReferences);
 }

@@ -1,8 +1,8 @@
 import window from 'window';
 import document from 'document';
-import settings from './settings.js';
-import { renderToolbar } from './toolbar.js';
-import { enableTags, prepareContent } from './filter.js';
+import settings from './settings';
+import { renderToolbar } from './toolbar';
+import { enableTags, prepareContent } from './filter';
 import {
   instances,
   placeholderClass,
@@ -10,7 +10,7 @@ import {
   blockElements,
   isFirefox
 } from './common.js';
-import { 
+import {
   addListener,
   cloneObject,
   createElement,
@@ -21,12 +21,13 @@ import {
   getTargetElements,
   getTextAreaLabel,
   storeTranslations
-} from './utils.js';
+} from './utils';
 import {
   dispatchEvent,
   execCommand,
   hasClass
-} from './shortcuts.js';
+} from './shortcuts';
+import { undo, redo, canUndo, canRedo, clearHistory } from './undoRedo';
 
 // Next available instance id
 let nextId = 0;
@@ -169,9 +170,10 @@ function destroy(selector) {
   const editorInstances = findEditorInstances(selector);
 
   for (const editorInstance of editorInstances) {
-    const { instanceId, wrapper } = editorInstance;
+    const { instanceId, wrapper, editor } = editorInstance;
 
     delete instances[instanceId];
+    clearHistory(editor);
     wrapper.remove();
   }
 }
@@ -188,6 +190,7 @@ function setContent(selector, content) {
     const { textarea, editor, instanceId } = editorInstance;
 
     updateContent(textarea, editor, instanceId, content, true);
+    clearHistory(editor);
   }
 }
 
@@ -262,6 +265,36 @@ function bootstrap() {
 
   // Clean up pasted content
   addListener(document, 'paste', cleanPastedContent);
+
+  // Handle undo/redo keyboard shortcuts
+  addListener(document, 'keydown', event => {
+    // Check if the target is within an editor
+    const target = event.target;
+    if (!target.closest || !target.closest('.wysi-editor')) {
+      return;
+    }
+
+    const { editor } = findInstance(target);
+    if (!editor) return;
+
+    const isCtrl = event.ctrlKey || event.metaKey;
+    const isShift = event.shiftKey;
+    const key = event.key.toLowerCase();
+
+    if (isCtrl && key === 'z' && !isShift) {
+      // Ctrl+Z: Undo (only if available)
+      if (canUndo(editor)) {
+        event.preventDefault();
+        undo(editor);
+      }
+    } else if ((isCtrl && key === 'y') || (isCtrl && isShift && key === 'z')) {
+      // Ctrl+Y or Ctrl+Shift+Z: Redo (only if available)
+      if (canRedo(editor)) {
+        event.preventDefault();
+        redo(editor);
+      }
+    }
+  });
 }
 
 // Expose Wysi to the global scope

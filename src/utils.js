@@ -352,7 +352,7 @@ export function getNewMarkerReferences(markers) {
  * @param {HTMLScriptElement[]} markers The start marker comment node.
  * @param {boolean} removeMarkers Whether to remove the markers after restoring (default: true).
  */
-export function restoreSelection(markers, removeMarkers = true) {
+export function restoreMarkerSelection(markers, removeMarkers = true) {
   if (markers.length !== 2) return;
   const [s,e] = markers;
 
