@@ -28,6 +28,7 @@ import {
   hasClass
 } from './shortcuts';
 import { undo, redo, canUndo, canRedo, clearHistory } from './undoRedo';
+import { suppressInputEvents } from './commands';
 
 // Next available instance id
 let nextId = 0;
@@ -256,6 +257,12 @@ function bootstrap() {
   // Update the textarea value when the editor's content changes
   addListener(document, 'input', '.wysi-editor', event => {
     const editor = event.target;
+
+    // Skip if input events are being suppressed (e.g., during highlight command)
+    if (suppressInputEvents.has(editor)) {
+      return;
+    }
+
     const textarea = editor.parentNode.nextElementSibling;
     const instanceId = getInstanceId(editor);
     const content = editor.innerHTML;

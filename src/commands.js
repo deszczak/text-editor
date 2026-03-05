@@ -17,6 +17,9 @@ import { formatTextNodes } from './autoFormat';
 import { htmlToMarkdown } from './markdown';
 import { saveState } from './undoRedo';
 
+// Set to track editors that should suppress input events during execCommand
+export const suppressInputEvents = new WeakSet();
+
 /**
  * Execute an action.
  * @param {string} action The action to execute.
@@ -57,7 +60,7 @@ export function execEditorCommand(editor, command, options) {
       if (typeof options === 'object') {
         const { state, selection } = options;
         if (state) {
-          revertState(command, selection);
+          revertState(editor, command, selection);
           break;
         }
       }
@@ -68,7 +71,7 @@ export function execEditorCommand(editor, command, options) {
       if (typeof options === 'object') {
         const { state, selection } = options;
         if (state) {
-          revertState('hr', selection);
+          revertState(editor, 'hr', selection);
           break;
         } else {
           execCommand(command);
@@ -101,15 +104,19 @@ export function execEditorCommand(editor, command, options) {
         if (typeof options === 'object') {
           const { state, selection } = options;
           if (state) {
-            revertState(command, selection);
+            revertState(editor, command, selection);
             break;
           } else {
             const markers = placeSelectionMarkers(selection);
+            // Suppress input events during execCommand to avoid duplicate events
+            suppressInputEvents.add(editor);
             execCommand('hiliteColor', "#ffff00");
+            suppressInputEvents.delete(editor);
             const nodes = getSelectedNodes();
             nodes.forEach(n => n.tagName === 'SPAN' && replaceNode(n, 'mark').classList.add(selectedClass));
             const newMarkers = getNewMarkerReferences(markers);
             restoreMarkerSelection(newMarkers);
+            editor.dispatchEvent(new Event('input', { bubbles: true }));
             break;
           }
         }
@@ -126,6 +133,7 @@ export function execEditorCommand(editor, command, options) {
       }
 
       formatTextNodes(container || editor);
+      editor.dispatchEvent(new Event('input', { bubbles: true }));
       showToast('Formatted Text', editor);
       break;
 
@@ -154,10 +162,11 @@ export function execEditorCommand(editor, command, options) {
 /**
  * Revert a formatting command and restore the selection properly.
  * Uses marker-based selection saving to handle multi-node selections correctly.
+ * @param {Element} editor The editor instance.
  * @param {string} command The command to execute.
  * @param {Selection} selection Selection to revert to.
  */
-export function revertState(command, selection) {
+export function revertState(editor, command, selection) {
   const anchor = selection.anchorNode;
   const elementToModify = anchor.tagName ? anchor : anchor.parentNode;
 
@@ -181,4 +190,5 @@ export function revertState(command, selection) {
 
   // Restore selection using the markers
   restoreMarkerSelection(newMarkerReferences);
+  editor.dispatchEvent(new Event('input', { bubbles: true }));
 }
