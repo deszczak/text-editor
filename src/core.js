@@ -1,87 +1,64 @@
-import window from 'window';
-import document from 'document';
-import settings from './settings';
-import { renderToolbar } from './toolbar';
-import { enableTags, prepareContent } from './filter';
+import window from 'window'
+import document from 'document'
+import settings from './settings'
+import { renderToolbar } from './toolbar'
+import { enableTags, prepareContent } from './filter'
 import {
   instances,
   placeholderClass,
   headingElements,
   blockElements,
   isFirefox
-} from './common.js';
+} from './common'
 import {
   addListener,
-  cloneObject,
   DOMReady,
   findEditorInstances,
   findInstance,
   getInstanceId,
   getTargetElements,
-  getTextAreaLabel,
-  storeTranslations
-} from './utils';
-import { createElement } from './common.js';
+  getTextAreaLabel
+} from './utils'
+import { createElement } from './common'
 import {
   dispatchEvent,
   execCommand,
-  hasClass
-} from './shortcuts';
-import { undo, redo, canUndo, canRedo, clearHistory } from './undoRedo';
-import { suppressInputEvents } from './commands';
+  hasClass,
+  cloneObject
+} from './shortcuts'
+import { undo, redo, canUndo, canRedo, clearHistory } from './undoRedo'
+import { suppressInputEvents } from './commands'
 
 // Next available instance id
-let nextId = 0;
+let nextId = 0
 
 /**
  * Init WYSIWYG editor instances.
  * @param {object} options Configuration options.
  */
 function init(options) {
-  const globalTranslations = window.wysiGlobalTranslations || {};
-  const translations = Object.assign({}, globalTranslations, options.translations || {});
-
-  // Store translated strings
-  storeTranslations(translations);
-
-  const tools = options.tools || settings.tools;
-  const selector = options.el || settings.el;
-  const targetEls = getTargetElements(selector);
-  const customActions = options.customActions || {};
-  const toolbar = renderToolbar(tools, customActions);
-  const allowedTags = enableTags(tools);
-  const customTags = options.customTags || [];
-
-  // Add custom tags if any to the allowed tags list
-  customTags.forEach(custom => {
-    if (custom.tags) {
-      const attributes = custom.attributes || [];
-      const styles = custom.styles || [];
-      const isEmpty = !!custom.isEmpty;
-
-      custom.tags.forEach(tag => {
-        allowedTags[tag] = { attributes, styles, isEmpty };
-      });
-    }
-  });
+  const tools = options.tools || settings.tools
+  const selector = options.el || settings.el
+  const targetEls = getTargetElements(selector)
+  const customActions = options.customActions || {}
+  const toolbar = renderToolbar(tools, customActions)
+  const allowedTags = enableTags(tools)
 
   // Append an editor instance to target elements
   targetEls.forEach(field => {
-    const sibling = field.previousElementSibling;
+    const sibling = field.previousElementSibling
 
     if (!sibling || !hasClass(sibling, 'wysi-wrapper')) {
-      const instanceId = nextId++;
+      const instanceId = nextId++
 
       // Store the instance's options 
-      instances[instanceId] = options;
+      instances[instanceId] = options
 
       // Cache the list of allowed tags in the instance
-      instances[instanceId].allowedTags = cloneObject(allowedTags);
+      instances[instanceId].allowedTags = cloneObject(allowedTags)
 
       // Wrapper
-      const wrapper = createElement('div', {
-        class: 'wysi-wrapper'
-      });
+      const wrapper = createElement('div', { class: 'wysi-wrapper' })
 
       // Editable region
       const editor = createElement('div', {
@@ -92,76 +69,68 @@ function init(options) {
         'aria-label': getTextAreaLabel(field),
         'data-wid': instanceId,
         _innerHTML: prepareContent(field.value, allowedTags)
-      });      
+      })
 
       // Insert the editor instance in the document
-      wrapper.appendChild(toolbar.cloneNode(true));
-      wrapper.appendChild(editor);
-      field.before(wrapper);
+      wrapper.appendChild(toolbar.cloneNode(true))
+      wrapper.appendChild(editor)
+      field.before(wrapper)
 
       // Apply configuration
-      configure(wrapper, options);
+      configure(wrapper, options)
 
     // Reconfigure instance
-    } else {
-      configure(sibling, options);
-    }
-  });
+    } else configure(sibling, options)
+  })
 }
 
 /**
  * Configure a WYSIWYG editor instance.
- * @param {object} instance The editor instance to configure.
+ * @param {HTMLElement} instance The editor instance to configure.
  * @param {object} options The configuration options.
  */
 function configure(instance, options) {
-  if (typeof options !== 'object') {
-    return;
-  }
+  if (typeof options !== 'object') return
 
   for (const key in options) {
     switch (key) {
       case 'autoGrow':
       case 'autoHide':
-        instance.classList.toggle(`wysi-${key.toLowerCase()}`, !!options[key]);
-        break;
+        instance.classList.toggle(`wysi-${key.toLowerCase()}`, !!options[key])
+        break
       case 'height':
-        const height = options.height;
+        const height = options.height
 
         if (!isNaN(height)) {
-          const editor = instance.lastChild;
+          const editor = instance.lastChild
 
-          editor.style.minHeight = `${height}px`;
-          editor.style.maxHeight = `${height}px`;
+          editor.style.minHeight = `${height}px`
+          editor.style.maxHeight = `${height}px`
         }
-        break;
+        break
     }
   }
 }
 
 /**
  * Update the content of a WYSIWYG editor instance.
- * @param {object} textarea The textarea eleement.
- * @param {object} editor The editable region.
+ * @param {HTMLElement} textarea The textarea element.
+ * @param {HTMLElement} editor The editable region.
  * @param {string} instanceId The id of the instance.
  * @param {string} rawContent The new unfiltered content of the instance.
  * @param {boolean} setEditorContent Whether to update the content of the editable region.
  */
-function updateContent(textarea, editor, instanceId, rawContent, setEditorContent) {
-  const instance = instances[instanceId];
-  const content = prepareContent(rawContent, instance.allowedTags);
-  const onChange = instance.onChange;
+function updateContent(textarea, editor, instanceId, rawContent, setEditorContent = false) {
+  const instance = instances[instanceId]
+  const content = prepareContent(rawContent, instance.allowedTags)
+  const onChange = instance.onChange
 
-  if (setEditorContent === true) {
-    editor.innerHTML = content;
-  }
+  if (setEditorContent) editor.innerHTML = content
 
-  textarea.value = content;
-  dispatchEvent(textarea, 'change');
+  textarea.value = content
+  dispatchEvent(textarea, 'change')
 
-  if (onChange) {
-    onChange(content);
-  }
+  if (onChange) onChange(content)
 }
 
 /**
@@ -169,14 +138,14 @@ function updateContent(textarea, editor, instanceId, rawContent, setEditorConten
  * @param {string} selector One or more selectors pointing to textarea fields.
  */
 function destroy(selector) {
-  const editorInstances = findEditorInstances(selector);
+  const editorInstances = findEditorInstances(selector)
 
   for (const editorInstance of editorInstances) {
-    const { instanceId, wrapper, editor } = editorInstance;
+    const { instanceId, wrapper, editor } = editorInstance
 
-    delete instances[instanceId];
-    clearHistory(editor);
-    wrapper.remove();
+    delete instances[instanceId]
+    clearHistory(editor)
+    wrapper.remove()
   }
 }
 
@@ -186,13 +155,13 @@ function destroy(selector) {
  * @param {string} content The new content of the editor instance.
  */
 function setContent(selector, content) {
-  const editorInstances = findEditorInstances(selector);
+  const editorInstances = findEditorInstances(selector)
 
   for (const editorInstance of editorInstances) {
-    const { textarea, editor, instanceId } = editorInstance;
+    const { textarea, editor, instanceId } = editorInstance
 
-    updateContent(textarea, editor, instanceId, content, true);
-    clearHistory(editor);
+    updateContent(textarea, editor, instanceId, content, true)
+    clearHistory(editor)
   }
 }
 
@@ -201,46 +170,46 @@ function setContent(selector, content) {
  * @param {object} event The browser's paste event.
  */
 function cleanPastedContent(event) {
-  const { editor, nodes } = findInstance(event.target);
-  const clipboardData = event.clipboardData;
+  const { editor, nodes } = findInstance(event.target)
+  const clipboardData = event.clipboardData
 
   if (editor && clipboardData.types.includes('text/html')) {
-    const pasted = clipboardData.getData('text/html');
-    const instanceId = getInstanceId(editor);
-    const allowedTags = instances[instanceId].allowedTags;
-    let content = prepareContent(pasted, allowedTags);
+    const pasted = clipboardData.getData('text/html')
+    const instanceId = getInstanceId(editor)
+    const allowedTags = instances[instanceId].allowedTags
+    let content = prepareContent(pasted, allowedTags)
 
     // Detect a heading tag in the current selection
-    const splitHeadingTag = nodes.filter(n => headingElements.includes(n.tagName)).length > 0;
+    const splitHeadingTag = nodes.filter(n => headingElements.includes(n.tagName)).length > 0
 
     // Force split the heading tag if any.
     // This fixes a bug in Webkit/Blink browsers where the whole content is converted to a heading
     if (splitHeadingTag && !isFirefox) {
-      const splitter = `<h1 class="${placeholderClass}"><br></h1><p class="${placeholderClass}"><br></p>`;
-      content = splitter + content + splitter;
+      const splitter = `<h1 class="${placeholderClass}"><br></h1><p class="${placeholderClass}"><br></p>`
+      content = splitter + content + splitter
     }
 
     // Manually paste the cleaned content
-    execCommand('insertHTML', content);
+    execCommand('insertHTML', content)
 
     if (splitHeadingTag && !isFirefox) {
       // Remove placeholder elements if any
       editor.querySelectorAll(`.${placeholderClass}`).forEach(fragment => {
-        fragment.remove();
-      });
+        fragment.remove()
+      })
 
       // Unwrap nested heading elements to fix a bug in Webkit/Blink browsers
       editor.querySelectorAll(headingElements.join()).forEach(heading => {
-        const firstChild = heading.firstElementChild;
+        const firstChild = heading.firstElementChild
 
         if (firstChild && blockElements.includes(firstChild.tagName)) {
-          heading.replaceWith(...heading.childNodes);
+          heading.replaceWith(...heading.childNodes)
         }
-      });
+      })
     }
 
     // Prevent the default paste action
-    event.preventDefault();
+    event.preventDefault()
   }
 }
 
@@ -250,82 +219,73 @@ function cleanPastedContent(event) {
  */
 function bootstrap() {
   // Configure editable regions
-  execCommand('styleWithCSS', false);
-  execCommand('enableObjectResizing', false);
-  execCommand('enableInlineTableEditing', false);
-  execCommand('defaultParagraphSeparator', 'p');
+  execCommand('styleWithCSS', false)
+  execCommand('enableObjectResizing', false)
+  execCommand('enableInlineTableEditing', false)
+  execCommand('defaultParagraphSeparator', 'p')
 
   // Update the textarea value when the editor's content changes
   addListener(document, 'input', '.wysi-editor', event => {
-    const editor = event.target;
+    const editor = event.target
 
     // Skip if input events are being suppressed (e.g., during highlight command)
-    if (suppressInputEvents.has(editor)) {
-      return;
-    }
+    if (suppressInputEvents.has(editor)) return
 
-    const textarea = editor.parentNode.nextElementSibling;
-    const instanceId = getInstanceId(editor);
-    const content = editor.innerHTML;
+    const textarea = editor.parentNode.nextElementSibling
+    const instanceId = getInstanceId(editor)
+    const content = editor.innerHTML
 
-    updateContent(textarea, editor, instanceId, content);
-  });
+    updateContent(textarea, editor, instanceId, content)
+  })
 
   // Clean up pasted content
-  addListener(document, 'paste', cleanPastedContent);
+  addListener(document, 'paste', cleanPastedContent)
 
   // Handle undo/redo keyboard shortcuts
   addListener(document, 'keydown', event => {
     // Check if the target is within an editor
-    const target = event.target;
-    if (!target.closest || !target.closest('.wysi-editor')) {
-      return;
-    }
+    const target = event.target
+    if (!target.closest || !target.closest('.wysi-editor')) return
 
-    const { editor } = findInstance(target);
-    if (!editor) return;
+    const { editor } = findInstance(target)
+    if (!editor) return
 
-    const isCtrl = event.ctrlKey || event.metaKey;
-    const isShift = event.shiftKey;
-    const key = event.key.toLowerCase();
+    const isCtrl = event.ctrlKey || event.metaKey
+    const isShift = event.shiftKey
+    const key = event.key.toLowerCase()
 
     if (isCtrl && key === 'z' && !isShift) {
       // Ctrl+Z: Undo (only if available)
       if (canUndo(editor)) {
-        event.preventDefault();
-        undo(editor);
+        event.preventDefault()
+        undo(editor)
       }
     } else if ((isCtrl && key === 'y') || (isCtrl && isShift && key === 'z')) {
       // Ctrl+Y or Ctrl+Shift+Z: Redo (only if available)
       if (canRedo(editor)) {
-        event.preventDefault();
-        redo(editor);
+        event.preventDefault()
+        redo(editor)
       }
     }
-  });
+  })
 }
 
 // Expose Wysi to the global scope
 window.Wysi = (() => {
   const methods = {
-    destroy,
-    setContent
-  };
+    destroy, setContent
+  }
 
   function Wysi(options) {
-    DOMReady(() => {
-      init(options || {});
-    });
+    DOMReady(() => init(options || {}))
   }
 
   for (const key in methods) {
-    Wysi[key] = (...args) => {
-      DOMReady(methods[key], args);
-    };
+    Wysi[key] = (...args) => DOMReady(methods[key], args)
   }
 
-  return Wysi;
-})();
+  return Wysi
+})()
 
 // Bootstrap Wysi when the DOM is ready
-DOMReady(bootstrap);
+DOMReady(bootstrap)

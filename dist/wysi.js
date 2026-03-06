@@ -30,18 +30,7 @@
         styles: [],
         isEmpty: false
       }
-    },
-    // Custom tags to allow when filtering inserted content
-    customTags: [
-      /* Example:
-       {
-        tags: ['table', 'thead', 'tbody', 'tr', 'td', 'th'], // Tags to allow
-        attributes: ['id', 'class'], // These attributes will be permitted for all the tags above
-        styles: ['width'],
-        isEmpty: false
-      }
-       */
-    ]
+    }
   };
 
   // Supported tools
@@ -151,8 +140,8 @@
   /**
    * Create an element and optionally set its attributes.
    * @param {string} tag The HTML tag of the new element.
-   * @param {object} [attributes] The element's attributes.
-   * @return {object} An HTML element.
+   * @param {object} attributes The element's attributes.
+   * @return {HTMLElement} An HTML element.
    */
   function createElement(tag, attributes) {
     const element = document$1.createElement(tag);
@@ -161,9 +150,7 @@
         // Attribute names starting with underscore are actually properties
         if (attributeName[0] === '_') {
           element[attributeName.substring(1)] = attributes[attributeName];
-        } else {
-          element.setAttribute(attributeName, attributes[attributeName]);
-        }
+        } else element.setAttribute(attributeName, attributes[attributeName]);
       }
     }
     return element;
@@ -171,10 +158,10 @@
 
   /**
    * Replace a DOM element with another while preserving its content.
-   * @param {object} node The element to replace.
+   * @param {Node || HTMLElement} node The element to replace.
    * @param {string} tag The HTML tag of the new element.
    * @param {boolean} [copyAttributes] If true, also copy the original element's attributes.
-   * @return {object} The new element/Node.
+   * @return {HTMLElement || Node} The new element/Node.
    */
   function replaceNode(node, tag, copyAttributes) {
     const newElement = createElement(tag);
@@ -207,12 +194,11 @@
     return document$1.execCommand(command, false, value);
   };
   const hasClass = (element, classes) => element.classList && element.classList.contains(classes);
+  const trimText = text => text.replace(/^\s+|\s+$/g, '').trim();
+  const cloneObject = obj => obj ? JSON.parse(JSON.stringify(obj)) : obj;
 
   // Used to store the current DOM selection for later use
   let currentSelection;
-
-  // For storing translated strings
-  let availableTranslations;
 
   // Unique marker ID counter
   let markerIdCounter = 0;
@@ -230,16 +216,14 @@
    * @param {function} [fn] Event handler if delegation is used.
    */
   function addListener(context, type, selector, fn) {
-    // Delegate event to the target of the selector
+    // Delegate an event to the target of the selector
     if (typeof selector === 'string') {
       context.addEventListener(type, event => {
         const target = event.target;
-        if (target.matches(selector)) {
-          fn.call(target, event);
-        }
+        if (target.matches(selector)) fn.call(target, event);
       });
 
-      // If the selector is not a string then it's a function
+      // If the selector is not a string, then it's a function,
       // in which case we need a regular event listener
     } else {
       fn = selector;
@@ -248,7 +232,7 @@
   }
 
   /**
-   * Build an html fragment from a string.
+   * Build an HTML fragment from a string.
    * @param {string} html The HTML code.
    * @return {object} A document fragment.
    */
@@ -259,39 +243,22 @@
   }
 
   /**
-   * Deep clone an object.
-   * @param {object} obj The object to clone.
-   * @return {object} The clone object.
-   */
-  function cloneObject(obj) {
-    return obj ? JSON.parse(JSON.stringify(obj)) : obj;
-  }
-
-  /**
    * Call a function only when the DOM is ready.
    * @param {function} fn The function to call.
    * @param {array} [args] Arguments to pass to the function.
    */
   function DOMReady(fn, args) {
     args = args !== undefined ? args : [];
-    if (document$1.readyState !== 'loading') {
-      fn(...args);
-    } else {
-      addListener(document$1, 'DOMContentLoaded', () => {
-        fn(...args);
-      });
-    }
+    if (document$1.readyState !== 'loading') fn(...args);else addListener(document$1, 'DOMContentLoaded', () => fn(...args));
   }
 
   /**
-   * Find the the deepest child of a node.
-   * @param {object} node The target node.
-   * @return {object} The deepest child node of our target node.
+   * Find the deepest child of a node.
+   * @param {Node} node The target node.
+   * @return {Node} The deepest child node of our target node.
    */
   function findDeepestChildNode(node) {
-    while (node.firstChild !== null) {
-      node = node.firstChild;
-    }
+    while (node.firstChild !== null) node = node.firstChild;
     return node;
   }
 
@@ -322,7 +289,7 @@
 
   /**
    * Find the current editor instance.
-   * @param {object} currentNode The possible child node of the editor instance.
+   * @param {Node || HTMLElement} currentNode The possible child node of the editor instance.
    * @return {object} The instance's editable region and toolbar, and an array of nodes that lead to it.
    */
   function findInstance(currentNode) {
@@ -337,9 +304,7 @@
           // Editable ancestor found
           ancestor = currentNode;
           break;
-        } else {
-          nodes.push(currentNode);
-        }
+        } else nodes.push(currentNode);
       }
       currentNode = currentNode.parentNode;
     }
@@ -357,16 +322,14 @@
 
   /**
    * Get the current selection.
-   * @return {object} The current selection.
+   * @return {Selection} The current selection.
    */
-  function getCurrentSelection() {
-    return currentSelection;
-  }
+  const getCurrentSelection = () => currentSelection;
 
   /**
-   * Get the html content of a document fragment.
-   * @param {string} fragment A document fragment.
-   * @return {string} The html content of the fragment.
+   * Get the HTML content of a document fragment.
+   * @param {HTMLElement} fragment A document fragment.
+   * @return {string} The HTML content of the fragment.
    */
   function getFragmentContent(fragment) {
     const wrapper = createElement('div');
@@ -376,16 +339,14 @@
 
   /**
    * Get an editor's instance id.
-   * @param {object} editor The editor element.
+   * @param {HTMLElement} editor The editor element.
    * @return {string} The instance id.
    */
-  function getInstanceId(editor) {
-    return editor.dataset.wid;
-  }
+  const getInstanceId = editor => editor.dataset.wid;
 
   /**
    * Get a list of DOM elements based on a selector value.
-   * @param {(string|object)} selector A CSS selector string, a DOM element or a list of DOM elements.
+   * @param {(string|object)} selector A CSS selector string, a DOM element, or a list of DOM elements.
    * @return {array} A list of DOM elements.
    */
   function getTargetElements(selector) {
@@ -394,26 +355,22 @@
       return Array.from(document$1.querySelectorAll(selector));
     }
 
-    // If selector is a DOM element, wrap it in an array
-    if (selector instanceof Node) {
-      return [selector];
-    }
+    // If the selector is a DOM element, wrap it in an array
+    if (selector instanceof Node) return [selector];
 
-    // If selector is a NodeList or an HTMLCollection, convert it to an array
+    // If the selector is a NodeList or an HTMLCollection, convert it to an array
     if (selector instanceof NodeList || selector instanceof HTMLCollection) {
       return Array.from(selector);
     }
 
-    // If selector is an array, find any DOM elements it contains
-    if (Array.isArray(selector)) {
-      return selector.filter(el => el instanceof Node);
-    }
+    // If the selector is an array, find any DOM elements it contains
+    if (Array.isArray(selector)) return selector.filter(el => el instanceof Node);
     return [];
   }
 
   /**
    * Try to guess the textarea element's label if any.
-   * @param {object} textarea The textarea element.
+   * @param {HTMLElement} textarea The textarea element.
    * @return {string} The textarea element's label or an empty string.
    */
   function getTextAreaLabel(textarea) {
@@ -431,33 +388,18 @@
       labelElement = document$1.querySelector("label[for=\"" + id + "\"]");
     }
 
-    // If a label element is found, return the first non empty child text node
+    // If a label element is found, return the first non-empty child text node
     if (labelElement) {
       const textNodes = [].filter.call(labelElement.childNodes, n => n.nodeType === 3);
       const texts = textNodes.map(n => n.textContent.replace(/\s+/g, ' ').trim());
       const label = texts.filter(l => l !== '')[0];
-      if (label) {
-        return label;
-      }
+      if (label) return label;
     }
     return '';
   }
 
   /**
-   * Get a translated string if applicable.
-   * @param {string} category The category of the string.
-   * @param {string} str The string to translate.
-   * @return {string} The translated string, or the original string otherwise.
-   */
-  function getTranslation(category, str) {
-    if (availableTranslations[category] && availableTranslations[category][str]) {
-      return availableTranslations[category][str];
-    }
-    return str;
-  }
-
-  /**
-   * Restore a previous selection if any.
+   * Restore a previous selection, if any.
    */
   function restoreCurrentSelection() {
     if (currentSelection) {
@@ -504,9 +446,7 @@
    * Remove the specified tag.
    * @param {HTMLElement} node Node to have the tag removed.
    */
-  function removeTag(node) {
-    node.outerHTML = node.innerHTML;
-  }
+  const removeTag = node => node.outerHTML = node.innerHTML;
 
   /**
    * Return new marker references.
@@ -549,15 +489,13 @@
 
   /**
    * Set the value of the current selection.
-   * @param {object} range The range to set.
+   * @param {Range} range The range to set.
    */
-  function setCurrentSelection(range) {
-    currentSelection = range;
-  }
+  const setCurrentSelection = range => currentSelection = range;
 
   /**
    * Set the selection to a range.
-   * @param {object} range The range to select.
+   * @param {Range} range The range to select.
    */
   function setSelection(range) {
     const selection = document$1.getSelection();
@@ -566,20 +504,12 @@
   }
 
   /**
-   * Store translated strings.
-   * @param {object} translations The translated strings.
-   */
-  function storeTranslations(translations) {
-    availableTranslations = translations;
-  }
-
-  /**
    * Set the expanded state of a button.
-   * @param {object} button The button.
+   * @param {HTMLElement} button The button.
    * @param {boolean} expanded The expanded state.
    */
   function toggleButton(button, expanded) {
-    button.setAttribute('aria-expanded', expanded);
+    button.setAttribute('aria-expanded', String(expanded));
   }
 
   /**
@@ -666,9 +596,7 @@
   function showToast(message, editor) {
     // Remove any existing toast
     const existingToast = document$1.querySelector('.wysi-toast');
-    if (existingToast) {
-      existingToast.remove();
-    }
+    if (existingToast) existingToast.remove();
 
     // Create toast element
     const toast = document$1.createElement('div');
@@ -741,7 +669,7 @@
     return text
     // Remove spaces before punctuation
     .replace(/[^\S\r\n]+([,.!?;:\]])/g, '$1')
-    // Normalize multiple spaces after punctuation to single space
+    // Normalize multiple spaces after punctuation to a single space
     .replace(/([,.!?;:\]])[^\S\r\n]{2,}/g, '$1 ');
   };
 
@@ -765,9 +693,7 @@
     });
     const textNodes = [];
     let node;
-    while ((node = walker.nextNode()) !== null) {
-      textNodes.push(node);
-    }
+    while ((node = walker.nextNode()) !== null) textNodes.push(node);
     textNodes.forEach(textNode => {
       const originalText = textNode.textContent;
       const formattedText = autoFormat(originalText);
@@ -785,12 +711,8 @@
   function htmlToMarkdown(element) {
     let markdown = '';
     function processNode(node) {
-      if (node.nodeType === Node.TEXT_NODE) {
-        return node.textContent;
-      }
-      if (node.nodeType !== Node.ELEMENT_NODE) {
-        return '';
-      }
+      if (node.nodeType === Node.TEXT_NODE) return node.textContent;
+      if (node.nodeType !== Node.ELEMENT_NODE) return '';
       const tagName = node.tagName.toLowerCase();
       let content = '';
 
@@ -888,9 +810,7 @@
 
     // Add to stack, limiting size
     stack.push(state);
-    if (stack.length > MAX_HISTORY_SIZE) {
-      stack.shift(); // Remove oldest state
-    }
+    if (stack.length > MAX_HISTORY_SIZE) stack.shift(); // Remove oldest state
 
     // Clear the redo stack when a new action is performed
     redoStack.delete(instanceId);
@@ -915,17 +835,15 @@
       redoStack.set(instanceId, redoStates);
     }
 
-    // Save current state to redo stack
+    // Save the current state to redo stack
     const currentState = {
       html: editor.innerHTML,
       selection: saveSelection(editor)
     };
     redoStates.push(currentState);
-    if (redoStates.length > MAX_HISTORY_SIZE) {
-      redoStates.shift();
-    }
+    if (redoStates.length > MAX_HISTORY_SIZE) redoStates.shift();
 
-    // Restore the previous state from undo stack
+    // Restore the previous state from the undo stack
     const previousState = undoStates.pop();
     editor.innerHTML = previousState.html;
     restoreSelection(editor, previousState.selection);
@@ -956,17 +874,15 @@
       undoStack.set(instanceId, undoStates);
     }
 
-    // Save current state to undo stack
+    // Save the current state to undo the stack
     const currentState = {
       html: editor.innerHTML,
       selection: saveSelection(editor)
     };
     undoStates.push(currentState);
-    if (undoStates.length > MAX_HISTORY_SIZE) {
-      undoStates.shift();
-    }
+    if (undoStates.length > MAX_HISTORY_SIZE) undoStates.shift();
 
-    // Restore the next state from redo stack
+    // Restore the next state from the redo stack
     const nextState = redoStates.pop();
     editor.innerHTML = nextState.html;
     restoreSelection(editor, nextState.selection);
@@ -1027,10 +943,8 @@
     if (!selection || selection.rangeCount === 0) return null;
     const range = selection.getRangeAt(0);
 
-    // Check if selection is within the editor
-    if (!editor.contains(range.commonAncestorContainer)) {
-      return null;
-    }
+    // Check if the selection is within the editor
+    if (!editor.contains(range.commonAncestorContainer)) return null;
     return {
       startContainer: getNodePath(editor, range.startContainer),
       startOffset: range.startOffset,
@@ -1057,7 +971,7 @@
       selection.removeAllRanges();
       selection.addRange(range);
     } catch (e) {
-      // If restoration fails, place cursor at the beginning
+      // If restoration fails, place the cursor at the beginning
       editor.focus();
     }
   }
@@ -1090,9 +1004,7 @@
   function getNodeFromPath(root, path) {
     let current = root;
     for (const index of path) {
-      if (!current.childNodes || index >= current.childNodes.length) {
-        return null;
-      }
+      if (!current.childNodes || index >= current.childNodes.length) return null;
       current = current.childNodes[index];
     }
     return current;
@@ -1204,9 +1116,7 @@
             nodes.forEach(n => n.tagName === 'SPAN' && replaceNode(n, 'mark').classList.add(selectedClass));
             const newMarkers = getNewMarkerReferences(markers);
             restoreMarkerSelection(newMarkers);
-            editor.dispatchEvent(new Event('input', {
-              bubbles: true
-            }));
+            dispatchEvent(editor, 'input');
             break;
           }
         }
@@ -1220,9 +1130,7 @@
           if (container.nodeType !== Node.ELEMENT_NODE) container = container.parentElement;
         }
         formatTextNodes(container || editor);
-        editor.dispatchEvent(new Event('input', {
-          bubbles: true
-        }));
+        dispatchEvent(editor, 'input');
         showToast('Formatted Text', editor);
         break;
       case 'markdownExport':
@@ -1278,9 +1186,7 @@
 
     // Restore selection using the markers
     restoreMarkerSelection(newMarkerReferences);
-    editor.dispatchEvent(new Event('input', {
-      bubbles: true
-    }));
+    dispatchEvent(editor, 'input');
   }
 
   // Used to give form fields unique ids
@@ -1289,8 +1195,8 @@
   /**
    * Render a popover form to set a tool's parameters.
    * @param {string} toolName The tool name.
-   * @param {object} button The tool's toolbar button.
-   * @return {object} A DOM element containing the button and the popover.
+   * @param {HTMLElement} button The tool's toolbar button.
+   * @return {HTMLElement} A DOM element containing the button and the popover.
    */
   function renderPopover(toolName, button) {
     const tool = toolset[toolName];
@@ -1298,7 +1204,7 @@
     const fields = tool.attributes.map((attribute, i) => {
       return {
         name: attribute,
-        label: getTranslation(toolName, labels[i])
+        label: labels[i]
       };
     });
 
@@ -1313,8 +1219,8 @@
     });
 
     // Toolbar Button
-    button.setAttribute('aria-haspopup', true);
-    button.setAttribute('aria-expanded', false);
+    button.setAttribute('aria-haspopup', 'true');
+    button.setAttribute('aria-expanded', 'false');
     wrapper.appendChild(button);
     wrapper.appendChild(popover);
     fields.forEach(field => {
@@ -1350,7 +1256,7 @@
 
       // The link popover needs an extra "Remove link" button
       const extraTool = 'unlink';
-      const label = getTranslation(toolName, toolset[extraTool].label);
+      const label = toolset[extraTool].label;
       popover.appendChild(createElement('button', {
         type: 'button',
         title: label,
@@ -1365,7 +1271,7 @@
       const imageSettings = tool.extraSettings.map((setting, i) => {
         return {
           name: setting,
-          label: getTranslation(toolName, tool.extraSettingLabels[i])
+          label: tool.extraSettingLabels[i]
         };
       });
       imageSettings.forEach(setting => {
@@ -1379,12 +1285,12 @@
     }
     const cancel = createElement('button', {
       type: 'button',
-      _textContent: getTranslation('popover', 'Cancel')
+      _textContent: 'Cancel'
     });
     const save = createElement('button', {
       type: 'button',
       'data-action': toolName,
-      _textContent: getTranslation('popover', 'Save')
+      _textContent: 'Save'
     });
     popover.appendChild(cancel);
     popover.appendChild(save);
@@ -1394,7 +1300,7 @@
   /**
    * Render a segmented form field.
    * @param {object} field The field attributes.
-   * @return {object} A DOM element representing the segmented field.
+   * @return {HTMLElement} A DOM element representing the segmented field.
    */
   function renderSegmentedField(field) {
     const fieldId = uniqueFieldId++;
@@ -1419,7 +1325,7 @@
       }));
       segmented.appendChild(createElement('label', {
         for: "wysi-seg-" + segmentId,
-        _textContent: getTranslation(field.toolName, option.label)
+        _textContent: option.label
       }));
     });
     return segmented;
@@ -1427,7 +1333,7 @@
 
   /**
    * Open a popover.
-   * @param {object} button The popover's button.
+   * @param {HTMLElement} button The popover's button.
    */
   function openPopover(button) {
     const inputs = button.nextElementSibling.querySelectorAll('input[type="text"]');
@@ -1458,28 +1364,20 @@
 
         // Add the target to a selection range
         // Depending on the type of the target, select the whole node or just its contents
-        if (selectContents) {
-          range.selectNodeContents(target);
-        } else {
-          range.selectNode(target);
-        }
+        if (selectContents) range.selectNodeContents(target);else range.selectNode(target);
 
         // Save the current selection for later use
         setCurrentSelection(range);
 
         // Retrieve the current attribute values of the target for modification
-        tool.attributes.forEach(attribute => {
-          values[attribute] = target.getAttribute(attribute);
-        });
+        tool.attributes.forEach(attribute => values[attribute] = target.getAttribute(attribute));
 
         // Process extra popover settings
         if (tool.extraSettings) {
           tool.extraSettings.forEach(setting => {
             const settingOptions = tool.formOptions[setting];
             for (const option of settingOptions) {
-              if (!option.criterion) {
-                continue;
-              }
+              if (!option.criterion) continue;
               const key = Object.keys(option.criterion)[0];
               const value = option.criterion[key];
               if (target.style[key] && target.style[key] === value) {
@@ -1497,29 +1395,25 @@
       }
     }
 
-    // Populate the input fields with the existing values if any
-    inputs.forEach(input => {
-      input.value = values[input.dataset.attribute] || '';
-    });
+    // Populate the input fields with the existing values, if any
+    inputs.forEach(input => input.value = values[input.dataset.attribute] || '');
 
-    // Check the relevent radio fields if any
+    // Check the relevant radio fields if any
     radioButtons.forEach(radio => {
       const value = values[radio.dataset.attribute] || '';
-      if (radio.value === value) {
-        radio.checked = true;
-      }
+      if (radio.value === value) radio.checked = true;
     });
 
     // Open this popover
     toggleButton(button, true);
 
-    // Focus the first input field
+    // Focus on the first input field
     inputs[0].focus();
   }
 
   /**
    * Execute a popover's action.
-   * @param {object} button The popover's action button.
+   * @param {HTMLElement} button The popover's action button.
    */
   function execPopoverAction(button) {
     const action = button.dataset.action;
@@ -1530,22 +1424,16 @@
       editor
     } = findInstance(button);
     const options = [];
-    inputs.forEach(input => {
-      options.push(input.value);
-    });
+    inputs.forEach(input => options.push(input.value));
     radioButtons.forEach(radio => {
-      if (radio.checked) {
-        options.push(radio.value);
-      }
+      if (radio.checked) options.push(radio.value);
     });
 
     // Workaround for links being removed when updating images
     if (action === 'image') {
       const selected = editor.querySelector("." + selectedClass);
       const parent = selected ? selected.parentNode : {};
-      if (selected && parent.tagName === 'A') {
-        options.push(parent.outerHTML);
-      }
+      if (selected && parent.tagName === 'A') options.push(parent.outerHTML);
 
       // Save the content of the current selection to use as a link text
     } else if (action === 'link' && selection) {
@@ -1559,13 +1447,12 @@
    * @param {boolean} ignoreSelection If true, do not restore the previous selection.
    */
   function closePopover(ignoreSelection) {
+    if (ignoreSelection === void 0) {
+      ignoreSelection = true;
+    }
     const popover = document$1.querySelector('.wysi-popover [aria-expanded="true"]');
-    if (popover) {
-      toggleButton(popover, false);
-    }
-    if (!ignoreSelection) {
-      restoreCurrentSelection();
-    }
+    if (popover) toggleButton(popover, false);
+    if (!ignoreSelection) restoreCurrentSelection();
   }
 
   // Open a popover
@@ -1640,9 +1527,7 @@
 
   // Close open popups and dropdowns on click outside
   addListener(document$1, 'click', () => {
-    if (!isSelectionInProgress) {
-      closePopover();
-    }
+    if (!isSelectionInProgress) closePopover();
   });
 
   // Text selection within a popover is in progress
@@ -1661,7 +1546,7 @@
   /**
    * Render a list box.
    * @param {object} details The list box properties and data.
-   * @return {object} A DOM element containing the list box.
+   * @return {HTMLElement} A DOM element containing the list box.
    */
   function renderListBox(details) {
     const label = details.label;
@@ -1723,42 +1608,36 @@
 
   /**
    * Open a list box.
-   * @param {object} button The list box's button.
+   * @param {HTMLElement} button The list box's button.
    */
   function openListBox(button) {
     const isOpen = button.getAttribute('aria-expanded') === 'true';
     const listBox = button.nextElementSibling;
     let selectedItem = listBox.querySelector('[aria-selected="true"]');
-    if (!selectedItem) {
-      selectedItem = listBox.firstElementChild;
-    }
+    if (!selectedItem) selectedItem = listBox.firstElementChild;
     toggleButton(button, !isOpen);
     selectedItem.focus();
   }
 
   /**
    * Select a list box item.
-   * @param {object} item The list box item.
+   * @param {HTMLElement} item The list box item.
    */
   function selectListBoxItem(item) {
     const listBox = item.parentNode;
     const button = listBox.previousElementSibling;
     const selectedItem = listBox.querySelector('[aria-selected="true"]');
-    if (selectedItem) {
-      selectedItem.setAttribute('aria-selected', 'false');
-    }
+    if (selectedItem) selectedItem.setAttribute('aria-selected', 'false');
     item.setAttribute('aria-selected', 'true');
     button.innerHTML = item.innerHTML;
   }
 
   /**
-   * Close the currently open list box if any.
+   * Close the currently open list box, if any.
    */
   function closeListBox() {
     const activeListBox = document$1.querySelector('.wysi-listbox [aria-expanded="true"]');
-    if (activeListBox) {
-      toggleButton(activeListBox, false);
-    }
+    if (activeListBox) toggleButton(activeListBox, false);
   }
 
   // list box button click
@@ -1794,9 +1673,7 @@
       editor
     } = findInstance(item);
     const selection = document$1.getSelection();
-    if (selection && editor.contains(selection.anchorNode)) {
-      execAction(action, editor, [option]);
-    }
+    if (selection && editor.contains(selection.anchorNode)) execAction(action, editor, [option]);
     selectListBoxItem(item);
   });
 
@@ -1809,15 +1686,11 @@
     switch (event.key) {
       case 'ArrowUp':
         const prev = item.previousElementSibling;
-        if (prev) {
-          prev.focus();
-        }
+        if (prev) prev.focus();
         break;
       case 'ArrowDown':
         const next = item.nextElementSibling;
-        if (next) {
-          next.focus();
-        }
+        if (next) next.focus();
         break;
       case 'Home':
         listBox.firstElementChild.focus();
@@ -1843,9 +1716,7 @@
 
   // Close open popups and dropdowns on click outside
   addListener(document$1, 'click', () => {
-    if (!isOpeningInProgress) {
-      closeListBox();
-    }
+    if (!isOpeningInProgress) closeListBox();
   });
 
   // This prevents closing a listbox immediately after opening it
@@ -1918,42 +1789,39 @@
   /**
    * Render a tool.
    * @param {string} name The tool's name.
-   * @param {object} toolbar The toolbar to which the tool will be appended.
+   * @param {HTMLElement} toolbar The toolbar to which the tool will be appended.
    */
   function renderTool(name, toolbar) {
     const tool = toolset[name];
-    const label = getTranslation(name, tool.label);
     const button = createElement('button', {
       type: 'button',
-      title: label,
-      'aria-label': label,
+      title: tool.label,
+      'aria-label': tool.label,
       'aria-pressed': false,
       'data-action': name,
       _innerHTML: "<svg><use href=\"#wysi-" + name + "\"></use></svg>"
     });
 
-    // Tools that require parameters (e.g: link) need a popover
+    // Tools that require parameters (e.g.: link) need a popover
     if (tool.hasForm) {
       const popover = renderPopover(name, button);
       toolbar.appendChild(popover);
 
       // The other tools only display a button
-    } else {
-      toolbar.appendChild(button);
-    }
+    } else toolbar.appendChild(button);
   }
 
   /**
    * Render a tool group.
    * @param {object} details The group's properties.
-   * @return {object} A DOM element containing the tool group.
+   * @return {HTMLElement} A DOM element containing the tool group.
    */
   function renderToolGroup(details) {
-    const label = details.label || getTranslation('toolbar', 'Select an item');
+    const label = details.label || 'Select an item';
     const options = details.items;
     const items = options.map(option => {
       const tool = toolset[option];
-      const label = getTranslation(option, tool.label);
+      const label = tool.label;
       const icon = option;
       const action = option;
       return {
@@ -1970,13 +1838,12 @@
 
   /**
    * Render format tool.
-   * @return {object} A DOM element containing the format tool.
+   * @return {HTMLElement} A DOM element containing the format tool.
    */
   function renderFormatTool() {
-    const toolName = 'format';
-    const label = getTranslation(toolName, toolset.format.label);
-    const paragraphLabel = getTranslation(toolName, toolset.format.paragraph);
-    const headingLabel = getTranslation(toolName, toolset.format.heading);
+    const label = toolset.format.label;
+    const paragraphLabel = toolset.format.paragraph;
+    const headingLabel = toolset.format.heading;
     const classes = 'wysi-format';
     const items = toolset.format.tags.map(tag => {
       const name = tag;
@@ -2001,9 +1868,7 @@
   function updateToolbarState() {
     const selection = document$1.getSelection();
     const anchorNode = selection.anchorNode;
-    if (!anchorNode) {
-      return;
-    }
+    if (!anchorNode) return;
     const range = selection.getRangeAt(0);
 
     // This is to fix double click selection on Firefox not highlighting the relevant tool in some cases
@@ -2013,7 +1878,7 @@
     // Fallback to the original selection.anchorNode if a more suitable node is not found
     const selectedNode = range.intersectsNode(candidateNode) ? candidateNode : anchorNode;
 
-    // Get editor instance
+    // Get an editor instance
     const {
       toolbar,
       editor,
@@ -2022,17 +1887,13 @@
     const tags = nodes.map(node => node.tagName.toLowerCase());
 
     // Abort if the selection is not within an editor instance
-    if (!editor) {
-      return;
-    }
+    if (!editor) return;
 
     // Check for an element with the selection class (likely a highlight)
     const selectedObject = editor.querySelector("." + selectedClass);
 
-    // If such element exists, add its tag to the list of active tags
-    if (selectedObject) {
-      tags.push(selectedObject.tagName.toLowerCase());
-    }
+    // If such an element exists, add its tag to the list of active tags
+    if (selectedObject) tags.push(selectedObject.tagName.toLowerCase());
 
     // Get the list of allowed tags in the current editor instance
     const instanceId = getInstanceId(editor);
@@ -2077,12 +1938,10 @@
     document$1.body.appendChild(svgElement);
   }
 
-  // Deselect selected element when clicking outside
+  // Deselect the selected element when clicking outside
   addListener(document$1, 'mousedown', '.wysi-editor, .wysi-editor *', event => {
     const selected = document$1.querySelector("." + selectedClass);
-    if (selected && selected !== event.target) {
-      selected.classList.remove(selectedClass);
-    }
+    if (selected && selected !== event.target) selected.classList.remove(selectedClass);
   });
 
   // "Select" a highlight when it's clicked
@@ -2135,9 +1994,7 @@
     const allowedTags = cloneObject(settings.allowedTags);
     tools.forEach(toolName => {
       const tool = cloneObject(toolset[toolName]);
-      if (!tool || !tool.tags) {
-        return;
-      }
+      if (!tool || !tool.tags) return;
       const isEmpty = !!tool.isEmpty;
       const extraTags = tool.extraTags || [];
       const aliasList = tool.alias || [];
@@ -2152,9 +2009,7 @@
           alias,
           isEmpty
         };
-        if (!extraTags.includes(tag)) {
-          allowedTags[tag].toolName = toolName;
-        }
+        if (!extraTags.includes(tag)) allowedTags[tag].toolName = toolName;
       });
     });
     return allowedTags;
@@ -2168,6 +2023,9 @@
    * @return {string} The filtered HTML content.
    */
   function prepareContent(content, allowedTags, filterOnly) {
+    if (filterOnly === void 0) {
+      filterOnly = false;
+    }
     const container = createElement('div');
     const fragment = buildFragment(content);
     filterContent(fragment, allowedTags);
@@ -2181,22 +2039,22 @@
 
   /**
    * Remove unsupported CSS styles from a node.
-   * @param {object} node The element to filter.
+   * @param {Node || HTMLElement} node The element to filter.
    * @param {array} allowedStyles An array of supported styles.
    */
   function filterStyles(node, allowedStyles) {
     const styleAttribute = node.getAttribute(STYLE_ATTRIBUTE);
     if (styleAttribute) {
       // Parse the styles
-      const styles = styleAttribute.split(';').map(style => {
-        const prop = style.split(':');
+      const styles = styleAttribute.split(';').map(s => {
+        const prop = s.split(':');
         return {
           name: prop[0].trim(),
-          value: prop[1]
+          value: prop[1].trim()
         };
       })
       // Filter the styles
-      .filter(style => allowedStyles.includes(style.name))
+      .filter(s => allowedStyles.includes(s.name))
 
       // Convert back to a style string
       .map(_ref => {
@@ -2206,24 +2064,18 @@
         } = _ref;
         return name + ": " + value.trim() + ";";
       }).join('');
-      if (styles !== '') {
-        node.setAttribute(STYLE_ATTRIBUTE, styles);
-      } else {
-        node.removeAttribute(STYLE_ATTRIBUTE);
-      }
+      if (styles !== '') node.setAttribute(STYLE_ATTRIBUTE, styles);else node.removeAttribute(STYLE_ATTRIBUTE);
     }
   }
 
   /**
    * Remove unsupported HTML tags and attributes.
-   * @param {object} node The parent element to filter recursively.
+   * @param {Node || HTMLElement} node The parent element to filter recursively.
    * @param {array} allowedTags The list of allowed tags.
    */
   function filterContent(node, allowedTags) {
     const children = Array.from(node.childNodes);
-    if (!children || !children.length) {
-      return;
-    }
+    if (!children || !children.length) return;
     children.forEach(childNode => {
       // Element nodes
       if (childNode.nodeType === 1) {
@@ -2244,45 +2096,33 @@
             if (!allowedAttributes.includes(attributes[i].name)) {
               if (attributeName === STYLE_ATTRIBUTE && allowedStyles.length) {
                 filterStyles(childNode, allowedStyles);
-              } else {
-                childNode.removeAttribute(attributes[i].name);
-              }
+              } else childNode.removeAttribute(attributes[i].name);
             }
           }
 
           // If the tag is an alias, replace it with the standard tag
-          // e.g: <b> tags will be replaced with <strong> tags
-          if (allowedTag.alias) {
-            replaceNode(childNode, allowedTag.alias, true);
-          }
+          // e.g.: <b> tags will be replaced with <strong> tags
+          if (allowedTag.alias) replaceNode(childNode, allowedTag.alias, true);
         } else {
           // Remove style nodes
-          if (tag === 'style') {
-            node.removeChild(childNode);
-
-            // And unwrap the other nodes
-          } else {
-            childNode.replaceWith(...childNode.childNodes);
-          }
+          if (tag === 'style') node.removeChild(childNode);
+          // And unwrap the other nodes
+          else childNode.replaceWith(...childNode.childNodes);
         }
 
         // Remove comment nodes
-      } else if (childNode.nodeType === 8) {
-        node.removeChild(childNode);
-      }
+      } else if (childNode.nodeType === 8) node.removeChild(childNode);
     });
   }
 
   /**
    * Remove empty nodes.
-   * @param {object} node The parent element to filter recursively.
+   * @param {Node} node The parent element to filter recursively.
    * @param {array} allowedTags The list of allowed tags.
    */
   function cleanContent(node, allowedTags) {
     const children = Array.from(node.childNodes);
-    if (!children || !children.length) {
-      return;
-    }
+    if (!children || !children.length) return;
     children.forEach(childNode => {
       // Remove empty element nodes
       if (childNode.nodeType === 1) {
@@ -2301,13 +2141,11 @@
 
   /**
    * Wrap the child text nodes in a paragraph (non-recursively).
-   * @param {object} node The parent element of the text nodes.
+   * @param {Node} node The parent element of the text nodes.
    */
   function wrapTextNodes(node) {
     const children = Array.from(node.childNodes);
-    if (!children || !children.length) {
-      return;
-    }
+    if (!children || !children.length) return;
     let appendToPrev = false;
     children.forEach(childNode => {
       if (childNode.nodeType !== 3 && blockElements.includes(childNode.tagName)) {
@@ -2316,30 +2154,19 @@
       }
 
       // Remove empty text node
-      /*if (trimText(childNode.textContent) === '') {
+      if (trimText(childNode.textContent) === '') {
         node.removeChild(childNode);
-       // Wrap text node in a paragraph
-      } else {*/
-      if (appendToPrev) {
-        const prev = childNode.previousElementSibling;
-        if (prev) {
-          prev.appendChild(childNode);
-        }
       } else {
-        replaceNode(childNode, 'p');
-        appendToPrev = true;
+        // Wrap the text node in a paragraph
+        if (appendToPrev) {
+          const prev = childNode.previousElementSibling;
+          if (prev) prev.appendChild(childNode);
+        } else {
+          replaceNode(childNode, 'p');
+          appendToPrev = true;
+        }
       }
-      /*}*/
     });
-  }
-
-  /**
-   * Trim whitespace from the start and end of a text.
-   * @param {string} text The text to trim.
-   * @return {string} The trimmed text.
-   */
-  function trimText(text) {
-    return text.replace(/^\s+|\s+$/g, '').trim();
   }
 
   // Next available instance id
@@ -2350,34 +2177,12 @@
    * @param {object} options Configuration options.
    */
   function init(options) {
-    const globalTranslations = window.wysiGlobalTranslations || {};
-    const translations = Object.assign({}, globalTranslations, options.translations || {});
-
-    // Store translated strings
-    storeTranslations(translations);
     const tools = options.tools || settings.tools;
     const selector = options.el || settings.el;
     const targetEls = getTargetElements(selector);
     const customActions = options.customActions || {};
     const toolbar = renderToolbar(tools, customActions);
     const allowedTags = enableTags(tools);
-    const customTags = options.customTags || [];
-
-    // Add custom tags if any to the allowed tags list
-    customTags.forEach(custom => {
-      if (custom.tags) {
-        const attributes = custom.attributes || [];
-        const styles = custom.styles || [];
-        const isEmpty = !!custom.isEmpty;
-        custom.tags.forEach(tag => {
-          allowedTags[tag] = {
-            attributes,
-            styles,
-            isEmpty
-          };
-        });
-      }
-    });
 
     // Append an editor instance to target elements
     targetEls.forEach(field => {
@@ -2416,21 +2221,17 @@
         configure(wrapper, options);
 
         // Reconfigure instance
-      } else {
-        configure(sibling, options);
-      }
+      } else configure(sibling, options);
     });
   }
 
   /**
    * Configure a WYSIWYG editor instance.
-   * @param {object} instance The editor instance to configure.
+   * @param {HTMLElement} instance The editor instance to configure.
    * @param {object} options The configuration options.
    */
   function configure(instance, options) {
-    if (typeof options !== 'object') {
-      return;
-    }
+    if (typeof options !== 'object') return;
     for (const key in options) {
       switch (key) {
         case 'autoGrow':
@@ -2451,24 +2252,23 @@
 
   /**
    * Update the content of a WYSIWYG editor instance.
-   * @param {object} textarea The textarea eleement.
-   * @param {object} editor The editable region.
+   * @param {HTMLElement} textarea The textarea element.
+   * @param {HTMLElement} editor The editable region.
    * @param {string} instanceId The id of the instance.
    * @param {string} rawContent The new unfiltered content of the instance.
    * @param {boolean} setEditorContent Whether to update the content of the editable region.
    */
   function updateContent(textarea, editor, instanceId, rawContent, setEditorContent) {
+    if (setEditorContent === void 0) {
+      setEditorContent = false;
+    }
     const instance = instances[instanceId];
     const content = prepareContent(rawContent, instance.allowedTags);
     const onChange = instance.onChange;
-    if (setEditorContent === true) {
-      editor.innerHTML = content;
-    }
+    if (setEditorContent) editor.innerHTML = content;
     textarea.value = content;
     dispatchEvent(textarea, 'change');
-    if (onChange) {
-      onChange(content);
-    }
+    if (onChange) onChange(content);
   }
 
   /**
@@ -2570,9 +2370,7 @@
       const editor = event.target;
 
       // Skip if input events are being suppressed (e.g., during highlight command)
-      if (suppressInputEvents.has(editor)) {
-        return;
-      }
+      if (suppressInputEvents.has(editor)) return;
       const textarea = editor.parentNode.nextElementSibling;
       const instanceId = getInstanceId(editor);
       const content = editor.innerHTML;
@@ -2586,9 +2384,7 @@
     addListener(document$1, 'keydown', event => {
       // Check if the target is within an editor
       const target = event.target;
-      if (!target.closest || !target.closest('.wysi-editor')) {
-        return;
-      }
+      if (!target.closest || !target.closest('.wysi-editor')) return;
       const {
         editor
       } = findInstance(target);
@@ -2619,16 +2415,14 @@
       setContent
     };
     function Wysi(options) {
-      DOMReady(() => {
-        init(options || {});
-      });
+      DOMReady(() => init(options || {}));
     }
     for (const key in methods) {
       Wysi[key] = function () {
         for (var _len = arguments.length, args = new Array(_len), _key = 0; _key < _len; _key++) {
           args[_key] = arguments[_key];
         }
-        DOMReady(methods[key], args);
+        return DOMReady(methods[key], args);
       };
     }
     return Wysi;

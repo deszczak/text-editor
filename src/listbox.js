@@ -1,26 +1,25 @@
-import document from 'document';
-import { execAction } from './commands';
+import document from 'document'
+import { execAction } from './commands'
 import {
   addListener,
   findInstance,
   toggleButton
-} from './utils.js';
+} from './utils'
 import { createElement } from './common'
-
 
 /**
  * Render a list box.
  * @param {object} details The list box properties and data.
- * @return {object} A DOM element containing the list box.
+ * @return {HTMLElement} A DOM element containing the list box.
  */
 function renderListBox(details) {
-  const label = details.label;
-  const items = details.items;
-  const firstItem = items[0];
-  const classes = ['wysi-listbox'].concat(details.classes || []);
+  const label = details.label
+  const items = details.items
+  const firstItem = items[0]
+  const classes = ['wysi-listbox'].concat(details.classes || [])
 
   // List box wrapper
-  const listBox = createElement('div', { class: classes.join(' ') });
+  const listBox = createElement('div', { class: classes.join(' ') })
 
   // List box button
   const button = createElement('button', {
@@ -30,14 +29,14 @@ function renderListBox(details) {
     'aria-haspopup': 'listbox',
     'aria-expanded': false,
     _innerHTML: renderListBoxItem(firstItem)
-  });
+  })
 
   // List box menu
   const menu = createElement('div', {
     role: 'listbox',
     tabindex: -1,
     'aria-label': label
-  });
+  })
 
   // List box items
   items.forEach(item => {
@@ -50,16 +49,16 @@ function renderListBox(details) {
       'data-action': item.action,
       'data-option': item.name || '',
       _innerHTML: renderListBoxItem(item)
-    });
+    })
 
-    menu.appendChild(option);
-  });
+    menu.appendChild(option)
+  })
 
   // Tie it all together
-  listBox.appendChild(button);
-  listBox.appendChild(menu);
+  listBox.appendChild(button)
+  listBox.appendChild(menu)
 
-  return listBox;
+  return listBox
 }
 
 /**
@@ -68,59 +67,52 @@ function renderListBox(details) {
  * @return {string} The list box item's content.
  */
 function renderListBoxItem(item) {
-  return item.icon ? `<svg><use href="#wysi-${item.icon}"></use></svg>` : item.label;
+  return item.icon ? `<svg><use href="#wysi-${item.icon}"></use></svg>` : item.label
 }
 
 /**
  * Open a list box.
- * @param {object} button The list box's button.
+ * @param {HTMLElement} button The list box's button.
  */
 function openListBox(button) {
-  const isOpen = button.getAttribute('aria-expanded') === 'true';
-  const listBox = button.nextElementSibling;
-  let selectedItem = listBox.querySelector('[aria-selected="true"]');
+  const isOpen = button.getAttribute('aria-expanded') === 'true'
+  const listBox = button.nextElementSibling
+  let selectedItem = listBox.querySelector('[aria-selected="true"]')
 
-  if (!selectedItem) {
-    selectedItem = listBox.firstElementChild;
-  }
+  if (!selectedItem) selectedItem = listBox.firstElementChild
 
-  toggleButton(button, !isOpen);
-  selectedItem.focus();
+  toggleButton(button, !isOpen)
+  selectedItem.focus()
 }
 
 /**
  * Select a list box item.
- * @param {object} item The list box item.
+ * @param {HTMLElement} item The list box item.
  */
 function selectListBoxItem(item) {
-  const listBox = item.parentNode;
-  const button = listBox.previousElementSibling;
-  const selectedItem = listBox.querySelector('[aria-selected="true"]');
+  const listBox = item.parentNode
+  const button = listBox.previousElementSibling
+  const selectedItem = listBox.querySelector('[aria-selected="true"]')
 
-  if (selectedItem) {
-    selectedItem.setAttribute('aria-selected', 'false');
-  }
+  if (selectedItem) selectedItem.setAttribute('aria-selected', 'false')
 
-  item.setAttribute('aria-selected', 'true');
-  button.innerHTML = item.innerHTML;
+  item.setAttribute('aria-selected', 'true')
+  button.innerHTML = item.innerHTML
 }
 
 /**
- * Close the currently open list box if any.
+ * Close the currently open list box, if any.
  */
 function closeListBox() {
-  const activeListBox = document.querySelector('.wysi-listbox [aria-expanded="true"]');
-
-  if (activeListBox) {
-    toggleButton(activeListBox, false);
-  }
+  const activeListBox = document.querySelector('.wysi-listbox [aria-expanded="true"]')
+  if (activeListBox) toggleButton(activeListBox, false)
 }
 
 // list box button click
 addListener(document, 'click', '.wysi-listbox > button', event => {
-  closeListBox();
-  openListBox(event.target);
-});
+  closeListBox()
+  openListBox(event.target)
+})
 
 // On key press on the list box button
 addListener(document, 'keydown', '.wysi-listbox > button', event => {
@@ -129,89 +121,77 @@ addListener(document, 'keydown', '.wysi-listbox > button', event => {
     case 'ArrowDown':
     case 'Enter':
     case ' ':
-      openListBox(event.target);
-      event.preventDefault();
-      break;
+      openListBox(event.target)
+      event.preventDefault()
+      break
   }
-});
+})
 
 // When the mouse moves on a list box item, focus it
 addListener(document.documentElement, 'mousemove', '.wysi-listbox > div > button', event => {
-  event.target.focus();
-});
+  event.target.focus()
+})
 
 // On click on a list box item
 addListener(document, 'click', '.wysi-listbox > div > button', event => {
-  const item = event.target;
-  const action = item.dataset.action;
-  const option = item.dataset.option;
-  const { editor } = findInstance(item);
-  const selection = document.getSelection();
+  const item = event.target
+  const action = item.dataset.action
+  const option = item.dataset.option
+  const { editor } = findInstance(item)
+  const selection = document.getSelection()
 
-  if (selection && editor.contains(selection.anchorNode)) {
-    execAction(action, editor, [option]);
-  }
+  if (selection && editor.contains(selection.anchorNode)) execAction(action, editor, [option])
 
-  selectListBoxItem(item);
-});
+  selectListBoxItem(item)
+})
 
 // On key press on an item
 addListener(document, 'keydown', '.wysi-listbox > div > button', event => {
-  const item = event.target;
-  const listBox = item.parentNode;
-  const button = listBox.previousElementSibling;
-  let preventDefault = true;
+  const item = event.target
+  const listBox = item.parentNode
+  const button = listBox.previousElementSibling
+  let preventDefault = true
 
   switch (event.key) {
     case 'ArrowUp':
-      const prev = item.previousElementSibling;
-
-      if (prev) {
-        prev.focus();
-      }
-
-      break;
+      const prev = item.previousElementSibling
+      if (prev) prev.focus()
+      break
     case 'ArrowDown':
-      const next = item.nextElementSibling;
-
-      if (next) {
-        next.focus();
-      }
-
-      break;
+      const next = item.nextElementSibling
+      if (next) next.focus()
+      break
     case 'Home':
-      listBox.firstElementChild.focus();
-      break;
+      listBox.firstElementChild.focus()
+      break
     case 'End':
-      listBox.lastElementChild.focus();
-      break;
+      listBox.lastElementChild.focus()
+      break
     case 'Tab':
-      item.click();
-      break;
+      item.click()
+      break
     case 'Escape':
-      toggleButton(button, false);
-      break;
+      toggleButton(button, false)
+      break
     default:
-      preventDefault = false;
+      preventDefault = false
   }
 
   if (preventDefault) {
-    event.preventDefault();
-    event.stopImmediatePropagation();
+    event.preventDefault()
+    event.stopImmediatePropagation()
   }
-});
+})
 
-let isOpeningInProgress = false;
+let isOpeningInProgress = false
 
 // Close open popups and dropdowns on click outside
 addListener(document, 'click', () => {
-  if (!isOpeningInProgress) {
-    closeListBox();
-  }
-});
+  if (!isOpeningInProgress) closeListBox()
+})
 
 // This prevents closing a listbox immediately after opening it
-addListener(document, 'mousedown', '.wysi-listbox > button', () => isOpeningInProgress = true);
-addListener(document, 'mouseup', () => setTimeout(() => { isOpeningInProgress = false; }));
+addListener(document, 'mousedown', '.wysi-listbox > button', () => isOpeningInProgress = true)
+addListener(document, 'mouseup', () => setTimeout(() => { isOpeningInProgress = false }))
 
-export { renderListBox, selectListBoxItem };
+export { renderListBox, selectListBoxItem }

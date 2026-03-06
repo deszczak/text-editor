@@ -85,4 +85,4 @@ export default {
     label: 'Copy as Markdown',
     command: 'markdownExport'
   }
-};
+}

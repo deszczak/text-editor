@@ -1,4 +1,4 @@
-import toolset from './toolset';
+import toolset from './toolset'
 import {
   restoreCurrentSelection,
   restoreMarkerSelection,
@@ -9,15 +9,15 @@ import {
   removeAllInSelection,
   copyToClipboard,
   showToast
-} from './utils';
-import { execCommand } from './shortcuts';
-import { replaceNode, selectedClass } from './common';
-import { formatTextNodes } from './autoFormat';
-import { htmlToMarkdown } from './markdown';
-import { saveState } from './undoRedo';
+} from './utils'
+import { dispatchEvent, execCommand } from './shortcuts'
+import { replaceNode, selectedClass } from './common'
+import { formatTextNodes } from './autoFormat'
+import { htmlToMarkdown } from './markdown'
+import { saveState } from './undoRedo'
 
 // Set to track editors that should suppress input events during execCommand
-export const suppressInputEvents = new WeakSet();
+export const suppressInputEvents = new WeakSet()
 
 /**
  * Execute an action.
@@ -26,23 +26,23 @@ export const suppressInputEvents = new WeakSet();
  * @param {array || object} options Optional action parameters.
  */
 export function execAction(action, editor, options = []) {
-  const tool = toolset[action];
+  const tool = toolset[action]
 
   if (tool) {
-    const command = tool.command || action;
+    const command = tool.command || action
 
     // Restore selection if any
-    restoreCurrentSelection();
+    restoreCurrentSelection()
 
     // Save state before executing the action (for undo)
-    saveState(editor);
+    saveState(editor)
 
     // Execute the tool's action
-    execEditorCommand(editor, command, options);
-    editor.normalize();
+    execEditorCommand(editor, command, options)
+    editor.normalize()
 
     // Focus the editor instance
-    editor.focus();
+    editor.focus()
   }
 }
 
@@ -57,104 +57,103 @@ export function execEditorCommand(editor, command, options) {
     // Block level formatting
     case 'quote':
       if (typeof options === 'object') {
-        const { state, selection } = options;
+        const { state, selection } = options
         if (state) {
-          revertState(editor, command, selection);
-          break;
+          revertState(editor, command, selection)
+          break
         }
       }
-      execCommand('formatBlock', '<blockquote>');
-      break;
+      execCommand('formatBlock', '<blockquote>')
+      break
 
     case 'insertHorizontalRule':
       if (typeof options === 'object') {
-        const { state, selection } = options;
+        const { state, selection } = options
         if (state) {
-          revertState(editor, 'hr', selection);
-          break;
+          revertState(editor, 'hr', selection)
+          break
         } else {
-          execCommand(command);
-          break;
+          execCommand(command)
+          break
         }
       }
-      execCommand(command);
-      break;
+      execCommand(command)
+      break
 
     case 'format':
-      if (Array.isArray(options)) execCommand('formatBlock', `<${options[0]}>`);
-      break;
+      if (Array.isArray(options)) execCommand('formatBlock', `<${options[0]}>`)
+      break
 
     // Links
     case 'link':
       if (Array.isArray(options)) {
-        const [linkUrl, linkTarget = '', linkText] = options;
+        const [linkUrl, linkTarget = '', linkText] = options
 
         if (linkText) {
-          const targetAttr = linkTarget !== '' ? ` target="${linkTarget}"` : '';
-          const linkTag = `<a href="${linkUrl}"${targetAttr}>${linkText}</a>`;
+          const targetAttr = linkTarget !== '' ? ` target="${linkTarget}"` : ''
+          const linkTag = `<a href="${linkUrl}"${targetAttr}>${linkText}</a>`
 
-          execCommand('insertHTML', linkTag);
+          execCommand('insertHTML', linkTag)
         }
       }
-      break;
+      break
 
     // Highlighting
       case 'highlight':
         if (typeof options === 'object') {
-          const { state, selection } = options;
+          const { state, selection } = options
           if (state) {
-            revertState(editor, command, selection);
-            break;
+            revertState(editor, command, selection)
+            break
           } else {
-            const markers = placeSelectionMarkers(selection);
+            const markers = placeSelectionMarkers(selection)
             // Suppress input events during execCommand to avoid duplicate events
-            suppressInputEvents.add(editor);
-            execCommand('hiliteColor', "#ffff00");
-            suppressInputEvents.delete(editor);
-            const nodes = getSelectedNodes();
-            nodes.forEach(n => n.tagName === 'SPAN' && replaceNode(n, 'mark').classList.add(selectedClass));
-            const newMarkers = getNewMarkerReferences(markers);
-            restoreMarkerSelection(newMarkers);
-            editor.dispatchEvent(new Event('input', { bubbles: true }));
-            break;
+            suppressInputEvents.add(editor)
+            execCommand('hiliteColor', "#ffff00")
+            suppressInputEvents.delete(editor)
+            const nodes = getSelectedNodes()
+            nodes.forEach(n => n.tagName === 'SPAN' && replaceNode(n, 'mark').classList.add(selectedClass))
+            const newMarkers = getNewMarkerReferences(markers)
+            restoreMarkerSelection(newMarkers)
+            dispatchEvent(editor, 'input')
+            break
           }
         }
         console.error('Error when trying to highlight.')
-        break;
+        break
 
     case 'autoFormat':
-      const sel = document.getSelection();
-      let container;
+      const sel = document.getSelection()
+      let container
 
       if (sel.rangeCount > 0 && !sel.isCollapsed) {
-        container = sel.getRangeAt(0).commonAncestorContainer;
-        if (container.nodeType !== Node.ELEMENT_NODE) container = container.parentElement;
+        container = sel.getRangeAt(0).commonAncestorContainer
+        if (container.nodeType !== Node.ELEMENT_NODE) container = container.parentElement
       }
 
-      formatTextNodes(container || editor);
-      editor.dispatchEvent(new Event('input', { bubbles: true }));
-      showToast('Formatted Text', editor);
-      break;
+      formatTextNodes(container || editor)
+      dispatchEvent(editor, 'input')
+      showToast('Formatted Text', editor)
+      break
 
     case 'markdownExport':
       if (editor) {
-        const markdown = htmlToMarkdown(editor);
-        copyToClipboard(markdown);
-        showToast('Markdown copied to clipboard', editor);
+        const markdown = htmlToMarkdown(editor)
+        copyToClipboard(markdown)
+        showToast('Markdown copied to clipboard', editor)
       }
-      break;
+      break
 
     case 'removeFormat':
-      const { selection } = options;
-      execCommand(command);
+      const { selection } = options
+      execCommand(command)
       if (editor && selection.type === 'Range') {
-        showToast('Formatting removed', editor);
+        showToast('Formatting removed', editor)
       }
-      break;
+      break
 
     // All the other commands
-    default:
-      execCommand(command);
+    default: execCommand(command)
   }
 }
 
@@ -166,28 +165,28 @@ export function execEditorCommand(editor, command, options) {
  * @param {Selection} selection Selection to revert to.
  */
 export function revertState(editor, command, selection) {
-  const anchor = selection.anchorNode;
-  const elementToModify = anchor.tagName ? anchor : anchor.parentNode;
+  const anchor = selection.anchorNode
+  const elementToModify = anchor.tagName ? anchor : anchor.parentNode
 
   // Place markers before making any DOM changes
-  const markers = placeSelectionMarkers();
+  const markers = placeSelectionMarkers()
 
   switch (command) {
     case 'highlight':
-      removeAllInSelection(selection, 'MARK');
-      break;
+      removeAllInSelection(selection, 'MARK')
+      break
     case 'quote':
-      removeAllInSelection(selection, 'BLOCKQUOTE');
-      break;
+      removeAllInSelection(selection, 'BLOCKQUOTE')
+      break
     case 'hr':
-      removeTag(elementToModify);
-      break;
+      removeTag(elementToModify)
+      break
   }
 
   // Get new marker references
-  const newMarkerReferences = getNewMarkerReferences(markers);
+  const newMarkerReferences = getNewMarkerReferences(markers)
 
   // Restore selection using the markers
-  restoreMarkerSelection(newMarkerReferences);
-  editor.dispatchEvent(new Event('input', { bubbles: true }));
+  restoreMarkerSelection(newMarkerReferences)
+  dispatchEvent(editor, 'input')
 }

@@ -4,81 +4,77 @@
  * @return {string} The Markdown text.
  */
 export function htmlToMarkdown(element) {
-  let markdown = '';
+  let markdown = ''
 
   function processNode(node) {
-    if (node.nodeType === Node.TEXT_NODE) {
-      return node.textContent;
-    }
+    if (node.nodeType === Node.TEXT_NODE) return node.textContent
 
-    if (node.nodeType !== Node.ELEMENT_NODE) {
-      return '';
-    }
+    if (node.nodeType !== Node.ELEMENT_NODE) return ''
 
-    const tagName = node.tagName.toLowerCase();
-    let content = '';
+    const tagName = node.tagName.toLowerCase()
+    let content = ''
 
     // Process child nodes
     for (const child of node.childNodes) {
-      content += processNode(child);
+      content += processNode(child)
     }
 
     // Convert based on tag
     switch (tagName) {
       case 'h1':
-        return `# ${content}\n\n`;
+        return `# ${content}\n\n`
       case 'h2':
-        return `## ${content}\n\n`;
+        return `## ${content}\n\n`
       case 'h3':
-        return `### ${content}\n\n`;
+        return `### ${content}\n\n`
       case 'h4':
-        return `#### ${content}\n\n`;
+        return `#### ${content}\n\n`
       case 'p':
-        return `${content}\n\n`;
+        return `${content}\n\n`
       case 'strong':
       case 'b':
-        return `**${content}**`;
+        return `**${content}**`
       case 'em':
       case 'i':
-        return `_${content}_`;
+        return `_${content}_`
       case 'u':
-        return `<u>${content}</u>`;
+        return `<u>${content}</u>`
       case 's':
       case 'del':
       case 'strike':
-        return `~~${content}~~`;
+        return `~~${content}~~`
       case 'mark':
-        return `==${content}==`;
+        return `==${content}==`
       case 'a':
-        const href = node.getAttribute('href') || '';
-        return `[${content}](${href})`;
+        const href = node.getAttribute('href') || ''
+        return `[${content}](${href})`
       case 'blockquote':
-        return content.split('\n').filter(line => line.trim()).map(line => `> ${line}`).join('\n') + '\n\n';
+        return content.split('\n').filter(line => line.trim()).map(line => `> ${line}`).join('\n') + '\n\n'
       case 'ul':
-        return content;
+        return content
       case 'ol':
-        return content;
+        return content
       case 'li':
-        const parent = node.parentElement;
+        const parent = node.parentElement
         if (parent && parent.tagName.toLowerCase() === 'ol') {
-          const index = Array.from(parent.children).indexOf(node) + 1;
-          return `${index}. ${content}\n`;
+          const index = Array.from(parent.children).indexOf(node) + 1
+          return `${index}. ${content}\n`
         }
-        return `- ${content}\n`;
+        return `- ${content}\n`
       case 'br':
-        return '\n';
+        return '\n'
       case 'hr':
-        return '---\n\n';
+        return '---\n\n'
       case 'div':
-        return `${content}\n`;
+        return `${content}\n`
       default:
-        return content;
+        return content
     }
   }
 
   for (const child of element.childNodes) {
-    markdown += processNode(child);
+    markdown += processNode(child)
   }
 
-  return markdown.trim();
+  return markdown.trim()
 }
