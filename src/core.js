@@ -47,7 +47,8 @@ function init(options) {
   const tools = options.tools || settings.tools;
   const selector = options.el || settings.el;
   const targetEls = getTargetElements(selector);
-  const toolbar = renderToolbar(tools);
+  const customActions = options.customActions || {};
+  const toolbar = renderToolbar(tools, customActions);
   const allowedTags = enableTags(tools);
   const customTags = options.customTags || [];
 

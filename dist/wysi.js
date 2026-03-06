@@ -2076,9 +2076,13 @@
   /**
    * Render the toolbar.
    * @param {array} tools The list of tools in the toolbar.
+   * @param {object} customActions Custom actions to add to the toolbar.
    * @return {string} The toolbars HTML string.
    */
-  function renderToolbar(tools) {
+  function renderToolbar(tools, customActions) {
+    if (customActions === void 0) {
+      customActions = {};
+    }
     const toolbar = createElement('div', {
       class: 'wysi-toolbar'
     });
@@ -2105,13 +2109,24 @@
           toolbar.appendChild(renderFormatTool());
           break;
 
-        // All the other tools render as buttons
+        // Custom action (string reference to customActions)
         default:
-          if (typeof toolName === 'object') {
-            if (toolName.items) {
-              toolbar.appendChild(renderToolGroup(toolName));
-            }
-          } else {
+          if (typeof toolName === 'string' && customActions[toolName]) {
+            const customAction = customActions[toolName];
+            const button = createElement('button', {
+              type: 'button',
+              title: customAction.label,
+              'aria-label': customAction.label,
+              'aria-pressed': false,
+              'data-custom-action': toolName,
+              _innerHTML: customAction.innerHTML
+            });
+            toolbar.appendChild(button);
+          } else if (typeof toolName === 'object' && toolName.items) {
+            // Tool group
+            toolbar.appendChild(renderToolGroup(toolName));
+          } else if (typeof toolName === 'string') {
+            // Standard tool
             renderTool(toolName, toolbar);
           }
       }
@@ -2300,11 +2315,20 @@
     const button = event.target;
     const state = JSON.parse(button.getAttribute('aria-pressed'));
     const action = button.dataset.action;
+    const customAction = button.dataset.customAction;
     const {
       editor
     } = findInstance(button);
     const selection = document$1.getSelection();
-    if (selection && editor.contains(selection.anchorNode)) {
+    if (customAction) {
+      // Execute custom action
+      const instanceId = getInstanceId(editor);
+      const instance = instances[instanceId];
+      const customActions = instance.customActions || {};
+      if (customActions[customAction] && customActions[customAction].action) {
+        customActions[customAction].action(editor);
+      }
+    } else if (action && selection && editor.contains(selection.anchorNode)) {
       execAction(action, editor, {
         state,
         selection
@@ -2335,7 +2359,8 @@
     const tools = options.tools || settings.tools;
     const selector = options.el || settings.el;
     const targetEls = getTargetElements(selector);
-    const toolbar = renderToolbar(tools);
+    const customActions = options.customActions || {};
+    const toolbar = renderToolbar(tools, customActions);
     const allowedTags = enableTags(tools);
     const customTags = options.customTags || [];
 
