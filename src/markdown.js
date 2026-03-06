@@ -1,80 +1,49 @@
 /**
  * Convert HTML content to Markdown.
- * @param {HTMLElement} element The element containing HTML content.
- * @return {string} The Markdown text.
+ * @param {HTMLElement} element - Element containing HTML content
+ * @returns {string} Markdown text
  */
 export function htmlToMarkdown(element) {
-  let markdown = ''
-
-  function processNode(node) {
+  const processNode = (node) => {
     if (node.nodeType === Node.TEXT_NODE) return node.textContent
-
     if (node.nodeType !== Node.ELEMENT_NODE) return ''
 
-    const tagName = node.tagName.toLowerCase()
-    let content = ''
+    const tag = node.tagName.toLowerCase()
+    const content = [...node.childNodes].map(processNode).join('')
 
-    // Process child nodes
-    for (const child of node.childNodes) {
-      content += processNode(child)
-    }
-
-    // Convert based on tag
-    switch (tagName) {
-      case 'h1':
-        return `# ${content}\n\n`
-      case 'h2':
-        return `## ${content}\n\n`
-      case 'h3':
-        return `### ${content}\n\n`
-      case 'h4':
-        return `#### ${content}\n\n`
-      case 'p':
-        return `${content}\n\n`
-      case 'strong':
-      case 'b':
-        return `**${content}**`
-      case 'em':
-      case 'i':
-        return `_${content}_`
-      case 'u':
-        return `<u>${content}</u>`
-      case 's':
-      case 'del':
-      case 'strike':
-        return `~~${content}~~`
-      case 'mark':
-        return `==${content}==`
-      case 'a':
-        const href = node.getAttribute('href') || ''
-        return `[${content}](${href})`
-      case 'blockquote':
-        return content.split('\n').filter(line => line.trim()).map(line => `> ${line}`).join('\n') + '\n\n'
-      case 'ul':
-        return content
-      case 'ol':
-        return content
-      case 'li':
+    const converters = {
+      h1: () => `# ${content}\n\n`,
+      h2: () => `## ${content}\n\n`,
+      h3: () => `### ${content}\n\n`,
+      h4: () => `#### ${content}\n\n`,
+      p: () => `${content}\n\n`,
+      strong: () => `**${content}**`,
+      b: () => `**${content}**`,
+      em: () => `_${content}_`,
+      i: () => `_${content}_`,
+      u: () => `<u>${content}</u>`,
+      s: () => `~~${content}~~`,
+      del: () => `~~${content}~~`,
+      strike: () => `~~${content}~~`,
+      mark: () => `==${content}==`,
+      a: () => `[${content}](${node.getAttribute('href') || ''})`,
+      blockquote: () => content.split('\n').filter(l => l.trim()).map(l => `> ${l}`).join('\n') + '\n\n',
+      ul: () => content,
+      ol: () => content,
+      li: () => {
         const parent = node.parentElement
-        if (parent && parent.tagName.toLowerCase() === 'ol') {
-          const index = Array.from(parent.children).indexOf(node) + 1
-          return `${index}. ${content}\n`
-        }
-        return `- ${content}\n`
-      case 'br':
-        return '\n'
-      case 'hr':
-        return '---\n\n'
-      case 'div':
-        return `${content}\n`
-      default:
-        return content
+        const prefix = parent?.tagName.toLowerCase() === 'ol' 
+          ? `${[...parent.children].indexOf(node) + 1}. ` 
+          : '- '
+        return `${prefix}${content}\n`
+      },
+      br: () => '\n',
+      hr: () => '---\n\n',
+      div: () => `${content}\n`
     }
+
+    return converters[tag]?.() ?? content
   }
 
-  for (const child of element.childNodes) {
-    markdown += processNode(child)
-  }
-
-  return markdown.trim()
+  return [...element.childNodes].map(processNode).join('').trim()
 }

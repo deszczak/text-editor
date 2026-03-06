@@ -7,16 +7,15 @@ const ORPHAN_PATTERN = /(^| )([wWzZ]e|[bB]y|[aAiI]ż|[kK]u|[aAiIoOuUwWzZ]) /gm
 const DOUBLE_ORPHAN_PATTERN = /\xa0([wWzZ]e|[bB]y|[aAiI]ż|[kK]u|[aAiIoOuUwWzZ]) /g
 
 /**
- * Add non-breaking spaces after orphans
+ * Add non-breaking spaces after orphan words
  */
 export const nbsp = (text) => {
   let result = text
   let prev = null
   let iterations = 0
-  const maxIterations = 5
 
   // Step 1: Replace space after orphan with non-breaking space
-  while (prev !== result && iterations < maxIterations) {
+  while (prev !== result && iterations < 5) {
     prev = result
     result = result.replace(ORPHAN_PATTERN, '$1$2\xa0')
     iterations++
@@ -25,7 +24,7 @@ export const nbsp = (text) => {
   // Step 2: Handle double orphans
   prev = null
   iterations = 0
-  while (prev !== result && iterations < maxIterations) {
+  while (prev !== result && iterations < 5) {
     prev = result
     result = result.replace(DOUBLE_ORPHAN_PATTERN, '\xa0$1\xa0')
     iterations++
@@ -37,57 +36,39 @@ export const nbsp = (text) => {
 /**
  * Replace hyphens surrounded by spaces with en-dash
  */
-export const dash = (text) => {
-  return text.replace(/(\s-)+\s/g, (match) =>
-    match === ' - ' ? ' – ' : match
-  )
-}
+export const dash = (text) => text.replace(/(\s-)+\s/g, m => m === ' - ' ? ' – ' : m)
 
 /**
  * Fix spacing around punctuation marks
- * Removes spaces before punctuation and normalizes spaces after
  */
-export const punctuation = (text) => {
-  return text
-    // Remove spaces before punctuation
-    .replace(/[^\S\r\n]+([,.!?;:\]])/g, '$1')
-    // Normalize multiple spaces after punctuation to a single space
-    .replace(/([,.!?;:\]])[^\S\r\n]{2,}/g, '$1 ')
-}
+export const punctuation = (text) => text
+  .replace(/[^\S\r\n]+([,.!?;:\]])/g, '$1')
+  .replace(/([,.!?;:\]])[^\S\r\n]{2,}/g, '$1 ')
 
 /**
- * Apply all formatting
- * Combines: punctuation, nbsp (orphan words), and dash
+ * Apply all formatting: punctuation, nbsp (orphan words), and dash
  */
-export const autoFormat = (text) => {
-  return punctuation(nbsp(dash(text)))
-}
+export const autoFormat = (text) => punctuation(nbsp(dash(text)))
 
 /**
  * Format all text nodes within a container element
- * @param {Element} container The element containing text to format
+ * @param {Element} container - Element containing text to format
  */
 export const formatTextNodes = (container) => {
+  if (!container) return
+  
   const walker = document.createTreeWalker(
-    container, NodeFilter.SHOW_TEXT,
-    {
-      acceptNode: (node) => {
-        return node.textContent.length > 0
-          ? NodeFilter.FILTER_ACCEPT
-          : NodeFilter.FILTER_REJECT
-      }
-    }
+    container,
+    NodeFilter.SHOW_TEXT,
+    { acceptNode: node => node.textContent.length ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT }
   )
 
-  const textNodes = []
+  const nodes = []
   let node
-  while ((node = walker.nextNode()) !== null) textNodes.push(node)
+  while ((node = walker.nextNode())) nodes.push(node)
 
-  textNodes.forEach(textNode => {
-    const originalText = textNode.textContent
-    const formattedText = autoFormat(originalText)
-    if (formattedText !== originalText) {
-      textNode.textContent = formattedText
-    }
+  nodes.forEach(n => {
+    const formatted = autoFormat(n.textContent)
+    if (formatted !== n.textContent) n.textContent = formatted
   })
 }

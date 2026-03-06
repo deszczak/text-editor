@@ -16,177 +16,104 @@ import { formatTextNodes } from './autoFormat'
 import { htmlToMarkdown } from './markdown'
 import { saveState } from './undoRedo'
 
-// Set to track editors that should suppress input events during execCommand
 export const suppressInputEvents = new WeakSet()
 
-/**
- * Execute an action.
- * @param {string} action The action to execute.
- * @param {HTMLElement} editor The editor instance.
- * @param {array || object} options Optional action parameters.
- */
-export function execAction(action, editor, options = []) {
+export function execAction(action, editor, options) {
   const tool = toolset[action]
+  if (!tool) return
 
-  if (tool) {
-    const command = tool.command || action
-
-    // Restore selection if any
-    restoreCurrentSelection()
-
-    // Save state before executing the action (for undo)
-    saveState(editor)
-
-    // Execute the tool's action
-    execEditorCommand(editor, command, options)
-    editor.normalize()
-
-    // Focus the editor instance
-    editor.focus()
-  }
+  restoreCurrentSelection()
+  saveState(editor)
+  execEditorCommand(editor, tool.command || action, options)
+  editor.normalize()
+  editor.focus()
 }
 
-/**
- * Execute an editor command.
- * @param {Element} editor The editor instance.
- * @param {string} command The command to execute.
- * @param {array || object} options Optional command parameters.
- */
 export function execEditorCommand(editor, command, options) {
-  switch (command) {
-    // Block level formatting
-    case 'quote':
-      if (typeof options === 'object') {
-        const { state, selection } = options
-        if (state) {
-          revertState(editor, command, selection)
-          break
-        }
-      }
-      execCommand('formatBlock', '<blockquote>')
-      break
-
-    case 'insertHorizontalRule':
-      if (typeof options === 'object') {
-        const { state, selection } = options
-        if (state) {
-          revertState(editor, 'hr', selection)
-          break
-        } else {
-          execCommand(command)
-          break
-        }
-      }
-      execCommand(command)
-      break
-
-    case 'format':
-      if (Array.isArray(options)) execCommand('formatBlock', `<${options[0]}>`)
-      break
-
-    // Links
-    case 'link':
-      if (Array.isArray(options)) {
-        const [linkUrl, linkTarget = '', linkText] = options
-
-        if (linkText) {
-          const targetAttr = linkTarget !== '' ? ` target="${linkTarget}"` : ''
-          const linkTag = `<a href="${linkUrl}"${targetAttr}>${linkText}</a>`
-
-          execCommand('insertHTML', linkTag)
-        }
-      }
-      break
-
-    // Highlighting
-      case 'highlight':
-        if (typeof options === 'object') {
-          const { state, selection } = options
-          if (state) {
-            revertState(editor, command, selection)
-            break
-          } else {
-            const markers = placeSelectionMarkers(selection)
-            // Suppress input events during execCommand to avoid duplicate events
-            suppressInputEvents.add(editor)
-            execCommand('hiliteColor', "#ffff00")
-            suppressInputEvents.delete(editor)
-            const nodes = getSelectedNodes()
-            nodes.forEach(n => n.tagName === 'SPAN' && replaceNode(n, 'mark').classList.add(selectedClass))
-            const newMarkers = getNewMarkerReferences(markers)
-            restoreMarkerSelection(newMarkers)
-            dispatchEvent(editor, 'input')
-            break
-          }
-        }
-        console.error('Error when trying to highlight.')
-        break
-
-    case 'autoFormat':
-      const sel = document.getSelection()
-      let container
-
-      if (sel.rangeCount > 0 && !sel.isCollapsed) {
-        container = sel.getRangeAt(0).commonAncestorContainer
-        if (container.nodeType !== Node.ELEMENT_NODE) container = container.parentElement
-      }
-
-      formatTextNodes(container || editor)
-      dispatchEvent(editor, 'input')
-      showToast('Formatted Text', editor)
-      break
-
-    case 'markdownExport':
-      if (editor) {
-        const markdown = htmlToMarkdown(editor)
-        copyToClipboard(markdown)
-        showToast('Markdown copied to clipboard', editor)
-      }
-      break
-
-    case 'removeFormat':
-      const { selection } = options
-      execCommand(command)
-      if (editor && selection.type === 'Range') {
-        showToast('Formatting removed', editor)
-      }
-      break
-
-    // All the other commands
-    default: execCommand(command)
+  if (command === 'format' && Array.isArray(options)) {
+    execCommand('formatBlock', `<${options[0]}>`)
+    return
   }
+
+  if (command === 'link' && Array.isArray(options)) {
+    const [url, target = '', text] = options
+    if (text) {
+      const targetAttr = target ? ` target="${target}"` : ''
+      execCommand('insertHTML', `<a href="${url}"${targetAttr}>${text}</a>`)
+    }
+    return
+  }
+
+  if (command === 'autoFormat') {
+    const sel = document.getSelection()
+    let container = sel.rangeCount && !sel.isCollapsed
+      ? sel.getRangeAt(0).commonAncestorContainer
+      : null
+    if (container && container.nodeType !== Node.ELEMENT_NODE) container = container.parentElement
+
+    formatTextNodes(container || editor)
+    dispatchEvent(editor, 'input')
+    showToast('Formatted Text', editor)
+    return
+  }
+
+  if (command === 'markdownExport') {
+    if (!editor) return
+    copyToClipboard(htmlToMarkdown(editor))
+    showToast('Markdown copied to clipboard', editor)
+    return
+  }
+
+  if (command === 'removeFormat') {
+    execCommand(command)
+    if (editor && options && options.selection && options.selection.type === 'Range') {
+      showToast('Formatting removed', editor)
+    }
+    return
+  }
+
+  if (command === 'quote') {
+    if (options && options.state) revertState(editor, command, options.selection)
+    else execCommand('formatBlock', '<blockquote>')
+    return
+  }
+
+  if (command === 'insertHorizontalRule') {
+    if (options && options.state) {
+      revertState(editor, 'hr', options.selection)
+    } else execCommand(command)
+    return
+  }
+
+  if (command === 'highlight') {
+    if (options && options.state) {
+      revertState(editor, command, options.selection)
+    } else {
+      const markers = placeSelectionMarkers(options.selection)
+      suppressInputEvents.add(editor)
+      execCommand('hiliteColor', '#ffff00')
+      suppressInputEvents.delete(editor)
+      getSelectedNodes().forEach(n => {
+        if (n.tagName === 'SPAN') replaceNode(n, 'mark').classList.add(selectedClass)
+      })
+      restoreMarkerSelection(getNewMarkerReferences(markers))
+      dispatchEvent(editor, 'input')
+    }
+    return
+  }
+
+  execCommand(command)
 }
 
-/**
- * Revert a formatting command and restore the selection properly.
- * Uses marker-based selection saving to handle multi-node selections correctly.
- * @param {Element} editor The editor instance.
- * @param {string} command The command to execute.
- * @param {Selection} selection Selection to revert to.
- */
 export function revertState(editor, command, selection) {
   const anchor = selection.anchorNode
   const elementToModify = anchor.tagName ? anchor : anchor.parentNode
-
-  // Place markers before making any DOM changes
   const markers = placeSelectionMarkers()
 
-  switch (command) {
-    case 'highlight':
-      removeAllInSelection(selection, 'MARK')
-      break
-    case 'quote':
-      removeAllInSelection(selection, 'BLOCKQUOTE')
-      break
-    case 'hr':
-      removeTag(elementToModify)
-      break
-  }
+  if (command === 'highlight') removeAllInSelection(selection, 'MARK')
+  else if (command === 'quote') removeAllInSelection(selection, 'BLOCKQUOTE')
+  else if (command === 'hr') removeTag(elementToModify)
 
-  // Get new marker references
-  const newMarkerReferences = getNewMarkerReferences(markers)
-
-  // Restore selection using the markers
-  restoreMarkerSelection(newMarkerReferences)
+  restoreMarkerSelection(getNewMarkerReferences(markers))
   dispatchEvent(editor, 'input')
 }

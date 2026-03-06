@@ -12,7 +12,7 @@ export default {
   },
   highlight: {
     tags: ['mark'],
-    label: 'Highlight',
+    label: 'Highlight'
   },
   bold: {
     tags: ['strong'],
@@ -53,14 +53,8 @@ export default {
     hasForm: true,
     formOptions: {
       target: [
-        {
-          label: 'Current tab',
-          value: ''
-        },
-        {
-          label: 'New tab',
-          value: '_blank'
-        }
+        { label: 'Current tab', value: '' },
+        { label: 'New tab', value: '_blank' }
       ]
     },
     label: 'Link'

@@ -1,217 +1,161 @@
 import document from 'document'
-import { hasClass } from './shortcuts'
 import { createElement, replaceNode } from './common'
 
-// Used to store the current DOM selection for later use
+// Store the current DOM selection for later use
 let currentSelection
 
 // Unique marker ID counter
 let markerIdCounter = 0
 
-// Polyfill for Nodelist.forEach
-if (NodeList !== undefined && NodeList.prototype && !NodeList.prototype.forEach) {
-    NodeList.prototype.forEach = Array.prototype.forEach
+// Polyfill for NodeList.forEach
+if (NodeList?.prototype && !NodeList.prototype.forEach) {
+  NodeList.prototype.forEach = Array.prototype.forEach
 }
 
 /**
- * Shortcut for addEventListener to optimize the minified JS.
- * @param {object} context The context to which the listener is attached.
- * @param {string} type Event type.
- * @param {(string|function)} selector Event target if delegation is used, event handler if not.
- * @param {function} [fn] Event handler if delegation is used.
+ * Add event listener with optional delegation
+ * @param {object} context - Event target
+ * @param {string} type - Event type
+ * @param {string|function} selector - Target selector or handler
+ * @param {function} [fn] - Event handler
  */
 export function addListener(context, type, selector, fn) {
-  // Delegate an event to the target of the selector
   if (typeof selector === 'string') {
-    context.addEventListener(type, event => {
-      const target = event.target
-
-      if (target.matches(selector)) fn.call(target, event)
+    context.addEventListener(type, e => {
+      const target = e.target.closest(selector)
+      if (target) fn.call(target, e)
     })
-
-  // If the selector is not a string, then it's a function,
-  // in which case we need a regular event listener
-  } else {
-    fn = selector
-    context.addEventListener(type, fn)
-  }
+  } else context.addEventListener(type, selector)
 }
 
 /**
- * Build an HTML fragment from a string.
- * @param {string} html The HTML code.
- * @return {object} A document fragment.
+ * Build HTML fragment from string
+ * @param {string} html - HTML code
+ * @returns {DocumentFragment}
  */
 export function buildFragment(html) {
   const template = createElement('template')
-
   template.innerHTML = html.trim()
   return template.content
 }
 
 /**
- * Call a function only when the DOM is ready.
- * @param {function} fn The function to call.
- * @param {array} [args] Arguments to pass to the function.
+ * Execute function when DOM is ready
+ * @param {function} fn - Function to execute
+ * @param {array} [args] - Arguments to pass
  */
-export function DOMReady(fn, args) {
-  args = args !== undefined ? args : []
-
+export function DOMReady(fn, args = []) {
   if (document.readyState !== 'loading') fn(...args)
   else addListener(document, 'DOMContentLoaded', () => fn(...args))
 }
 
 /**
- * Find the deepest child of a node.
- * @param {Node} node The target node.
- * @return {Node} The deepest child node of our target node.
+ * Find the deepest child node
+ * @param {Node} node - Target node
+ * @returns {Node} Deepest child
  */
-export function findDeepestChildNode(node) {
-  while(node.firstChild !== null) node = node.firstChild
+export const findDeepestChildNode = (node) => {
+  while (node.firstChild) node = node.firstChild
   return node
 }
 
 /**
- * Find WYSIWYG editor instances.
- * @param {string} selector One or more selectors pointing to textarea fields.
+ * Find WYSIWYG editor instances
+ * @param {string} selector - Textarea selectors
+ * @returns {array} Editor instances
  */
 export function findEditorInstances(selector) {
-  const editorInstances = []
-
-  getTargetElements(selector).forEach(textarea => {
+  return getTargetElements(selector).map(textarea => {
     const wrapper = textarea.previousElementSibling
-
-    if (wrapper && hasClass(wrapper, 'wysi-wrapper')) {
-      const children = wrapper.children
-      const toolbar = children[0]
-      const editor = children[1]
-      const instanceId = getInstanceId(editor)
-
-      editorInstances.push({ textarea, wrapper, toolbar, editor, instanceId })
-    }
-  })
-
-  return editorInstances
+    if (wrapper && !wrapper.classList.contains('wysi-wrapper')) return null
+    
+    const [toolbar, editor] = wrapper.children
+    return { textarea, wrapper, toolbar, editor, instanceId: getInstanceId(editor) }
+  }).filter(Boolean)
 }
 
 /**
- * Find the current editor instance.
- * @param {Node || HTMLElement} currentNode The possible child node of the editor instance.
- * @return {object} The instance's editable region and toolbar, and an array of nodes that lead to it.
+ * Find current editor instance
+ * @param {Node || HTMLElement} currentNode - Possible child node
+ * @returns {object} Instance data
  */
 export function findInstance(currentNode) {
   const nodes = []
   let ancestor, toolbar, editor
 
-  // Find all HTML tags between the current node and the editable ancestor
   while (currentNode && currentNode !== document.body) {
-    const tag = currentNode.tagName
-
-    if (tag) {
-      if (hasClass(currentNode, 'wysi-wrapper')) {
-        // Editable ancestor found
+    if (currentNode.tagName) {
+      if (currentNode.classList.contains('wysi-wrapper')) {
         ancestor = currentNode
         break
-      } else nodes.push(currentNode)
+      }
+      nodes.push(currentNode)
     }
-
     currentNode = currentNode.parentNode
   }
 
-  if (ancestor) {
-    const children = ancestor.children
-
-    toolbar = children[0]
-    editor = children[1]
-  }
+  if (ancestor) [toolbar, editor] = ancestor.children
 
   return { toolbar, editor, nodes }
 }
 
-/**
- * Get the current selection.
- * @return {Selection} The current selection.
- */
 export const getCurrentSelection = () => currentSelection
 
 /**
- * Get the HTML content of a document fragment.
- * @param {HTMLElement} fragment A document fragment.
- * @return {string} The HTML content of the fragment.
+ * Get HTML content of document fragment
+ * @param {HTMLElement} fragment - Document fragment
+ * @returns {string} HTML content
  */
 export function getFragmentContent(fragment) {
   const wrapper = createElement('div')
-
   wrapper.appendChild(fragment)
   return wrapper.innerHTML
 }
 
 /**
- * Get an editor's instance id.
- * @param {HTMLElement} editor The editor element.
- * @return {string} The instance id.
- */ 
-export const getInstanceId = (editor) => editor.dataset.wid
+ * Get editor instance ID
+ * @param {HTMLElement} editor - Editor element
+ * @returns {string} Instance ID
+ */
+export const getInstanceId = (editor) => editor?.dataset.wid
 
 /**
- * Get a list of DOM elements based on a selector value.
- * @param {(string|object)} selector A CSS selector string, a DOM element, or a list of DOM elements.
- * @return {array} A list of DOM elements.
- */ 
+ * Get DOM elements from selector
+ * @param {string|object} selector - CSS selector, DOM element, or list
+ * @returns {array} DOM elements
+ */
 export function getTargetElements(selector) {
-  // If selector is a string, get the elements that it represents
-  if (typeof selector === 'string') {
-    return Array.from(document.querySelectorAll(selector))
-  }
-
-  // If the selector is a DOM element, wrap it in an array
+  if (typeof selector === 'string') return [...document.querySelectorAll(selector)]
   if (selector instanceof Node) return [selector]
-
-  // If the selector is a NodeList or an HTMLCollection, convert it to an array
-  if (selector instanceof NodeList || selector instanceof HTMLCollection) {
-    return Array.from(selector)
-  }
-
-  // If the selector is an array, find any DOM elements it contains
+  if (selector instanceof NodeList || selector instanceof HTMLCollection) return [...selector]
   if (Array.isArray(selector)) return selector.filter(el => el instanceof Node)
-
   return []
 }
 
 /**
- * Try to guess the textarea element's label if any.
- * @param {HTMLElement} textarea The textarea element.
- * @return {string} The textarea element's label or an empty string.
- */ 
+ * Try to guess textarea element's label
+ * @param {HTMLElement} textarea - Textarea element
+ * @returns {string} Label text
+ */
 export function getTextAreaLabel(textarea) {
-  const parent = textarea.parentNode
-  const id = textarea.id
-  let labelElement
+  const { parentNode, id } = textarea
+  const labelElement = parentNode.nodeName === 'LABEL' 
+    ? parentNode 
+    : id ? document.querySelector(`label[for="${id}"]`) : null
 
-  // If the textarea element is inside a label element
-  if (parent.nodeName === 'LABEL') {
-    labelElement = parent
-
-  // Or if the textarea element has an id, and there is a label element
-  // with an attribute "for" that points to that id
-  } else if (id !== undefined) {
-    labelElement = document.querySelector(`label[for="${id}"]`)
-  }
-
-  // If a label element is found, return the first non-empty child text node
   if (labelElement) {
-    const textNodes = [].filter.call(labelElement.childNodes, n => n.nodeType === 3)
-    const texts = textNodes.map(n => n.textContent.replace(/\s+/g, ' ').trim())
-    const label = texts.filter(l => l !== '')[0]
-
-    if (label) return label
+    const text = [...labelElement.childNodes]
+      .filter(n => n.nodeType === 3)
+      .map(n => n.textContent.replace(/\s+/g, ' ').trim())
+      .find(l => l)
+    if (text) return text
   }
 
   return ''
 }
 
 /**
- * Restore a previous selection, if any.
+ * Restore the previous selection if any
  */
 export function restoreCurrentSelection() {
   if (currentSelection) {
@@ -221,10 +165,10 @@ export function restoreCurrentSelection() {
 }
 
 /**
- * Create a unique marker element for selection boundaries.
- * @return {Comment} A comment node to use as a marker.
+ * Create unique marker element for selection boundaries
+ * @returns {HTMLScriptElement} Marker element
  */
-function createMarker() {
+const createMarker = () => {
   const script = document.createElement('script')
   script.type = 'marker'
   script.id = `mark-${markerIdCounter++}`
@@ -232,23 +176,21 @@ function createMarker() {
 }
 
 /**
- * Save the current selection by inserting temporary markers.
- * This handles multi-node selections correctly by marking both start and end points.
- * @param {Selection?} selection The selection to save (defaults to current selection).
- * @return {Array} Array containing the start and end marker comment nodes.
+ * Save the current selection by inserting temporary markers
+ * @param {Selection} [selection] - Selection to save
+ * @returns {Array|null} Marker elements
  */
-export function placeSelectionMarkers(selection) {
-  const sel = selection || document.getSelection()
-  if (!sel || !sel.rangeCount) return null
+export function placeSelectionMarkers(selection = document.getSelection()) {
+  if (!selection?.rangeCount) return null
 
-  const range = sel.getRangeAt(0)
+  const range = selection.getRangeAt(0)
   const startMarker = createMarker()
   const endMarker = createMarker()
 
-  // Safely place the markers with cloneRange
   const startRange = range.cloneRange()
   startRange.collapse(true)
   startRange.insertNode(startMarker)
+
   const endRange = range.cloneRange()
   endRange.collapse(false)
   endRange.insertNode(endMarker)
@@ -257,100 +199,81 @@ export function placeSelectionMarkers(selection) {
 }
 
 /**
- * Remove the specified tag.
- * @param {HTMLElement} node Node to have the tag removed.
+ * Remove tag from node
+ * @param {HTMLElement} node - Node to process
  */
 export const removeTag = (node) => node.outerHTML = node.innerHTML
 
 /**
- * Return new marker references.
- * @param {HTMLScriptElement[]} markers Array of saved markers.
- * @return {HTMLScriptElement[]} Array of new marker references.
+ * Get new marker references after DOM changes
+ * @param {HTMLScriptElement[]} markers - Saved markers
+ * @returns {HTMLScriptElement[]} New references
  */
-export function getNewMarkerReferences(markers) {
-  const m1 = document.getElementById(markers[0].id)
-  const m2 = document.getElementById(markers[1].id)
-  return [m1, m2]
-}
+export const getNewMarkerReferences = (markers) => markers.map(m => document.getElementById(m.id))
 
 /**
- * Restore selection using marker elements.
- * This properly restores multi-node selections.
- * @param {HTMLScriptElement[]} markers The start marker comment node.
- * @param {boolean} removeMarkers Whether to remove the markers after restoring (default: true).
+ * Restore selection using marker elements
+ * @param {HTMLScriptElement[]} markers - Start and end markers
+ * @param {boolean} [removeMarkers=true] - Remove markers after restoring
  */
 export function restoreMarkerSelection(markers, removeMarkers = true) {
   if (markers.length !== 2) return
-  const [s,e] = markers
+  const [start, end] = markers
 
-  const selection = document.getSelection()
-  const range = selection.getRangeAt(0)
-
-  // Set range's start after the start marker
-  range.setStartAfter(s)
-  // Set range's end before the end marker
-  range.setEndBefore(e)
+  const range = document.getSelection().getRangeAt(0)
+  range.setStartAfter(start)
+  range.setEndBefore(end)
   setSelection(range)
 
-  // Remove markers if requested
-  if (removeMarkers) { s.remove(); e.remove() }
+  if (removeMarkers) {
+    start.remove()
+    end.remove()
+  }
 }
 
-/**
- * Set the value of the current selection.
- * @param {Range} range The range to set.
- */
 export const setCurrentSelection = (range) => currentSelection = range
 
 /**
- * Set the selection to a range.
- * @param {Range} range The range to select.
+ * Set selection to a range
+ * @param {Range} range - Range to select
  */
 export function setSelection(range) {
   const selection = document.getSelection()
-
   selection.removeAllRanges()
   selection.addRange(range)
 }
 
 /**
- * Set the expanded state of a button.
- * @param {HTMLElement} button The button.
- * @param {boolean} expanded The expanded state.
+ * Set button expanded state
+ * @param {HTMLElement} button - Button element
+ * @param {boolean} expanded - Expanded state
  */
-export function toggleButton(button, expanded) {
-  button.setAttribute('aria-expanded', String(expanded))
-}
+export const toggleButton = (button, expanded) => button.setAttribute('aria-expanded', String(expanded))
 
 /**
- * Get all selected nodes.
- * @param {Selection?} selection The selection to get nodes from.
- * @return {array} The selected nodes.
+ * Get all selected nodes
+ * @param {Selection} [selection] - Selection to get nodes from
+ * @returns {array} Selected nodes
  */
-export function getSelectedNodes(selection) {
-  const sel = selection || document.getSelection()
-  if (!sel || !sel.rangeCount) return []
+export function getSelectedNodes(selection = document.getSelection()) {
+  if (!selection?.rangeCount) return []
 
-  const range = sel.getRangeAt(0)
+  const range = selection.getRangeAt(0)
   const container = range.commonAncestorContainer
-  const nodes = []
+  const parent = container.nodeType === Node.ELEMENT_NODE ? container : container.parentElement
 
+  const nodes = []
   const walker = document.createTreeWalker(
-    container.nodeType === Node.ELEMENT_NODE ? container : container.parentElement,
+    parent,
     NodeFilter.SHOW_ALL,
-    {
-      acceptNode: (node) => {
-        return range.intersectsNode(node)
-          ? NodeFilter.FILTER_ACCEPT
-          : NodeFilter.FILTER_REJECT
-      }
-    }
+    { acceptNode: node => range.intersectsNode(node) ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT }
   )
 
   let currentNode = walker.currentNode
-
   while (currentNode) {
-    if (range.intersectsNode(currentNode) && currentNode !== container) nodes.push(currentNode)
+    if (range.intersectsNode(currentNode) && currentNode !== container) {
+      nodes.push(currentNode)
+    }
     currentNode = walker.nextNode()
   }
 
@@ -358,86 +281,68 @@ export function getSelectedNodes(selection) {
 }
 
 /**
- * Remove all tags within a selection range.
- * @param {Selection} selection The selection containing highlighted content.
- * @param {string} tag The tag name of the element to remove.
+ * Remove all tags within selection range
+ * @param {Selection} selection - Selection containing content
+ * @param {string} tag - Tag name to remove
  */
 export function removeAllInSelection(selection, tag) {
   const range = selection.getRangeAt(0)
-  const commonAncestor = range.commonAncestorContainer
-  const nodeIsElement = commonAncestor.nodeType === Node.ELEMENT_NODE
+  const container = range.commonAncestorContainer.nodeType === Node.ELEMENT_NODE 
+    ? range.commonAncestorContainer 
+    : range.commonAncestorContainer.parentElement
 
-  // Get the container element to search for tags
-  const container = nodeIsElement ? commonAncestor
-    : commonAncestor.parentElement
+  const elsToRemove = [...container.querySelectorAll(tag)].filter(el => range.intersectsNode(el))
 
-  // Find all elements and filter the ones that intersect with the selection
-  const elsToRemove = Array
-    .from(container.querySelectorAll(tag))
-    .filter(el => range.intersectsNode(el))
-
-  // Remove all collected elements
   if (!elsToRemove.length && container.tagName === tag) {
     removeTag(container)
-  } else elsToRemove.forEach(el => {
-    if (el.parentElement.classList.contains('wysi-editor')) {
-      replaceNode(el, 'p')
-    } else removeTag(el)
-  })
-}
-
-/**
- * Copy text to clipboard.
- * @param {string} text The text to copy.
- */
-export function copyToClipboard(text) {
-  if (navigator.clipboard && navigator.clipboard.writeText) {
-    navigator.clipboard.writeText(text).then(() => {
-    }).catch(err => {
-      console.error('Failed to copy to clipboard:', err)
-    })
   } else {
-    // Fallback for older browsers
-    const textarea = document.createElement('textarea')
-    textarea.value = text
-    textarea.style.position = 'fixed'
-    textarea.style.opacity = '0'
-    document.body.appendChild(textarea)
-    textarea.select()
-    try { document.execCommand('copy') }
-    catch (err) { console.error('Failed to copy to clipboard:', err) }
-    document.body.removeChild(textarea)
+    elsToRemove.forEach(el => {
+      if (el.parentElement.classList.contains('wysi-editor')) {
+        replaceNode(el, 'p')
+      } else removeTag(el)
+    })
   }
 }
 
 /**
- * Show a toast notification message.
- * @param {string} message The message to display.
- * @param {HTMLElement} editor The editor element to position the toast relative to.
+ * Copy text to clipboard
+ * @param {string} text - Text to copy
+ */
+export function copyToClipboard(text) {
+  if (navigator.clipboard?.writeText) {
+    navigator.clipboard.writeText(text).catch(err => console.error('Failed to copy:', err))
+    return
+  }
+
+  // Fallback for older browsers
+  const textarea = document.createElement('textarea')
+  textarea.value = text
+  textarea.style.cssText = 'position:fixed;opacity:0'
+  document.body.appendChild(textarea)
+  textarea.select()
+  try { document.execCommand('copy') } catch (err) { console.error('Failed to copy:', err) }
+  document.body.removeChild(textarea)
+}
+
+/**
+ * Show toast notification
+ * @param {string} message - Message to display
+ * @param {HTMLElement} editor - Editor element
  */
 export function showToast(message, editor) {
-  // Remove any existing toast
-  const existingToast = document.querySelector('.wysi-toast')
-  if (existingToast) existingToast.remove()
+  document.querySelector('.wysi-toast')?.remove()
 
-  // Create toast element
   const toast = document.createElement('div')
   toast.className = 'wysi-toast'
   toast.textContent = message
 
-  // Find the editor wrapper or use the editor itself
-  const wrapper = editor?.closest('.wysi-wrapper') || editor
-  if (wrapper) wrapper.appendChild(toast)
-  else document.body.appendChild(toast)
+  const wrapper = editor?.closest('.wysi-wrapper') || editor || document.body
+  wrapper.appendChild(toast)
 
-  // Trigger animation
   requestAnimationFrame(() => toast.classList.add('wysi-toast--visible'))
 
-  // Remove after delay
   setTimeout(() => {
     toast.classList.remove('wysi-toast--visible')
-    setTimeout(() => {
-      toast.remove()
-    }, 300)
+    setTimeout(() => toast.remove(), 300)
   }, 2000)
 }

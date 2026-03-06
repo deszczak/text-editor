@@ -13,246 +13,179 @@ import {
 } from './utils'
 import { createElement } from './common'
 
-// Used to give form fields unique ids
 let uniqueFieldId = 0
 
 /**
- * Render a popover form to set a tool's parameters.
- * @param {string} toolName The tool name.
- * @param {HTMLElement} button The tool's toolbar button.
- * @return {HTMLElement} A DOM element containing the button and the popover.
+ * Render a popover form for tool parameters
+ * @param {string} toolName - Tool name
+ * @param {HTMLElement} button - Toolbar button
+ * @returns {HTMLElement}
  */
-function renderPopover(toolName, button) {
+export function renderPopover(toolName, button) {
   const tool = toolset[toolName]
-  const labels = tool.attributeLabels
-  const fields = tool.attributes.map((attribute, i) => {
-    return { name: attribute, label: labels[i] }
-  })
+  const fields = tool.attributes.map((attr, i) => ({ name: attr, label: tool.attributeLabels[i] }))
 
-  // Popover wrapper
   const wrapper = createElement('div', { class: 'wysi-popover' })
-
-  // Popover
   const popover = createElement('div', { tabindex: -1 })
 
-  // Toolbar Button
   button.setAttribute('aria-haspopup', 'true')
   button.setAttribute('aria-expanded', 'false')
 
-  wrapper.appendChild(button)
-  wrapper.appendChild(popover)
+  wrapper.append(button, popover)
 
+  // Add regular fields
   fields.forEach(field => {
-    // Link target requires special handling later
-    if (toolName !== 'link' || field.name !== 'target') {
-      const label = createElement('label')
-      const span = createElement('span', { _textContent: field.label })
-      const input = createElement('input', {
-        type: 'text',
-        name: `wysi-${field.name}`,
-        'data-attribute': field.name
-      })
-
-      label.appendChild(span)
-      label.appendChild(input)
-      popover.appendChild(label)
-    }
+    if (toolName === 'link' && field.name === 'target') return
+    
+    popover.appendChild(createElement('label', {
+      _innerHTML: `<span>${field.label}</span><input type="text" name="wysi-${field.name}" data-attribute="${field.name}">`
+    }))
   })
 
-  // Link popover
+  // Link-specific fields
   if (toolName === 'link') {
-    // Add the target attribute
     const targetField = fields.find(f => f.name === 'target')
-
     if (targetField) {
       targetField.toolName = toolName
-      targetField.options = tool.formOptions ? tool.formOptions.target || [] : []
-      popover.appendChild(createElement('span', { _textContent: targetField.label }))
-      popover.appendChild(renderSegmentedField(targetField))
+      targetField.options = tool.formOptions?.target || []
+      popover.append(
+        createElement('span', { _textContent: targetField.label }),
+        renderSegmentedField(targetField)
+      )
     }
 
-    // The link popover needs an extra "Remove link" button
-    const extraTool = 'unlink'
-    const label = toolset[extraTool].label
-
+    const unlinkLabel = toolset.unlink.label
     popover.appendChild(createElement('button', {
       type: 'button',
-      title: label,
-      'aria-label': label,
-      'data-action': extraTool,
+      title: unlinkLabel,
+      'aria-label': unlinkLabel,
+      'data-action': 'unlink',
       _innerHTML: `<svg><use href="#wysi-delete"></use></svg>`
     }))
   }
 
-  // Image popover
+  // Image-specific fields
   if (toolName === 'image') {
-    const imageSettings = tool.extraSettings.map((setting, i) => {
-      return { name: setting, label: tool.extraSettingLabels[i] }
-    })
-
-    imageSettings.forEach(setting => {
-      setting.toolName = toolName
-      setting.options = tool.formOptions ? tool.formOptions[setting.name] || [] : []
-      popover.appendChild(createElement('span', { _textContent: setting.label }))
-      popover.appendChild(renderSegmentedField(setting))
+    tool.extraSettings.forEach((setting, i) => {
+      const field = {
+        name: setting,
+        label: tool.extraSettingLabels[i],
+        toolName,
+        options: tool.formOptions?.[setting] || []
+      }
+      popover.append(
+        createElement('span', { _textContent: field.label }),
+        renderSegmentedField(field)
+      )
     })
   }
 
-  const cancel = createElement('button', { type: 'button', _textContent: 'Cancel' })
-
-  const save = createElement('button', {
-    type: 'button',
-    'data-action': toolName,
-    _textContent: 'Save'
-  })
-
-  popover.appendChild(cancel)
-  popover.appendChild(save)
+  popover.append(
+    createElement('button', { type: 'button', _textContent: 'Cancel' }),
+    createElement('button', { type: 'button', 'data-action': toolName, _textContent: 'Save' })
+  )
 
   return wrapper
 }
 
 /**
- * Render a segmented form field.
- * @param {object} field The field attributes.
- * @return {HTMLElement} A DOM element representing the segmented field.
+ * Render a segmented form field
+ * @param {object} field - Field attributes
+ * @returns {HTMLElement}
  */
 function renderSegmentedField(field) {
   const fieldId = uniqueFieldId++
   const segmented = createElement('fieldset', { class: 'wysi-segmented' })
-
-  // Add the fieldset legend for accessibility
   segmented.appendChild(createElement('legend', { _textContent: field.label }))
 
-  // Add field options
   field.options.forEach(option => {
     const segmentId = uniqueFieldId++
-
-    segmented.appendChild(createElement('input', {
-      id: `wysi-seg-${segmentId}`,
-      name: `wysi-${field.toolName}-${field.name}-${fieldId}`,
-      type: 'radio',
-      'data-attribute': field.name,
-      value: option.value
-    }))
-    
-    segmented.appendChild(createElement('label', {
-      for: `wysi-seg-${segmentId}`,
-      _textContent: option.label
-    }))
+    segmented.append(
+      createElement('input', {
+        id: `wysi-seg-${segmentId}`,
+        name: `wysi-${field.toolName}-${field.name}-${fieldId}`,
+        type: 'radio',
+        'data-attribute': field.name,
+        value: option.value
+      }),
+      createElement('label', { for: `wysi-seg-${segmentId}`, _textContent: option.label })
+    )
   })
 
   return segmented
 }
 
 /**
- * Open a popover.
- * @param {HTMLElement} button The popover's button.
+ * Open a popover
+ * @param {HTMLElement} button - Popover button
  */
 function openPopover(button) {
-  const inputs = button.nextElementSibling.querySelectorAll('input[type="text"]')
-  const radioButtons = button.nextElementSibling.querySelectorAll('input[type="radio"]')
+  const popoverContent = button.nextElementSibling
+  const inputs = popoverContent.querySelectorAll('input[type="text"]')
+  const radioButtons = popoverContent.querySelectorAll('input[type="radio"]')
   const selection = document.getSelection()
   const anchorNode = selection.anchorNode
   const { editor, nodes } = findInstance(anchorNode)
   const values = {}
 
   if (editor) {
-    // Try to find an existing target of the popover's action from the DOM selection
     const action = button.dataset.action
     const tool = toolset[action]
     let target = editor.querySelector(`.${selectedClass}`)
     let selectContents = false
 
-    // If that fails, look for an element with the selection CSS class
     if (!target) {
-      target = nodes.filter(node => tool.tags.includes(node.tagName.toLowerCase()))[0]
+      target = nodes.find(node => tool.tags.includes(node.tagName.toLowerCase()))
       selectContents = true
     }
 
-    // If an existing target is found, we will be in modification mode
     if (target) {
       const range = document.createRange()
-      
-      // Add the target to a selection range
-      // Depending on the type of the target, select the whole node or just its contents
-      if (selectContents) range.selectNodeContents(target)
-      else range.selectNode(target)
-
-      // Save the current selection for later use
+      selectContents ? range.selectNodeContents(target) : range.selectNode(target)
       setCurrentSelection(range)
 
-      // Retrieve the current attribute values of the target for modification
-      tool.attributes.forEach(attribute => values[attribute] = target.getAttribute(attribute))
+      tool.attributes.forEach(attr => values[attr] = target.getAttribute(attr))
 
-      // Process extra popover settings
-      if (tool.extraSettings) {
-        tool.extraSettings.forEach(setting => {
-          const settingOptions = tool.formOptions[setting]
-
-          for (const option of settingOptions) {
-            if (!option.criterion) continue
-
-            const key = Object.keys(option.criterion)[0]
-            const value = option.criterion[key]
-
-            if (target.style[key] && target.style[key] === value) {
-              values[setting] = option.value
-              break
-            }
+      tool.extraSettings?.forEach(setting => {
+        tool.formOptions[setting]?.forEach(option => {
+          if (!option.criterion) return
+          const [key, value] = Object.entries(option.criterion)[0]
+          if (target.style[key] === value) {
+            values[setting] = option.value
           }
         })
-      }
-
-    // If no existing target is found, we are adding new content
+      })
     } else if (selection && editor.contains(anchorNode) && selection.rangeCount) {
-      // Save the current selection to keep track of where to insert the content
       setCurrentSelection(selection.getRangeAt(0))
     }
   }
 
-  // Populate the input fields with the existing values, if any
   inputs.forEach(input => input.value = values[input.dataset.attribute] || '')
+  radioButtons.forEach(radio => radio.checked = radio.value === (values[radio.dataset.attribute] || ''))
 
-  // Check the relevant radio fields if any
-  radioButtons.forEach(radio => {
-    const value = values[radio.dataset.attribute] || ''
-    if (radio.value === value) radio.checked = true
-  })
-
-  // Open this popover
   toggleButton(button, true)
-
-  // Focus on the first input field
-  inputs[0].focus()
+  inputs[0]?.focus()
 }
 
 /**
- * Execute a popover's action.
- * @param {HTMLElement} button The popover's action button.
+ * Execute popover action
+ * @param {HTMLElement} button - Action button
  */
 function execPopoverAction(button) {
   const action = button.dataset.action
   const selection = getCurrentSelection()
-  const inputs = button.parentNode.querySelectorAll('input[type="text"]')
-  const radioButtons = button.parentNode.querySelectorAll('input[type="radio"]')
+  const parent = button.parentNode
+  const inputs = parent.querySelectorAll('input[type="text"]')
+  const radioButtons = parent.querySelectorAll('input[type="radio"]')
   const { editor } = findInstance(button)
   const options = []
 
   inputs.forEach(input => options.push(input.value))
+  radioButtons.forEach(radio => { if (radio.checked) options.push(radio.value) })
 
-  radioButtons.forEach(radio => {
-    if (radio.checked) options.push(radio.value)
-  })
-
-  // Workaround for links being removed when updating images
   if (action === 'image') {
-    const selected = editor.querySelector(`.${selectedClass}`)
-    const parent = selected ? selected.parentNode : {}
-
-    if (selected && parent.tagName === 'A') options.push(parent.outerHTML)
-
-  // Save the content of the current selection to use as a link text
+    const selected = editor?.querySelector(`.${selectedClass}`)
+    if (selected?.parentNode?.tagName === 'A') options.push(selected.parentNode.outerHTML)
   } else if (action === 'link' && selection) {
     options.push(getFragmentContent(selection.cloneContents()))
   }
@@ -260,104 +193,69 @@ function execPopoverAction(button) {
   execAction(action, editor, options)
 }
 
-/**
- * Close the open popover if any.
- * @param {boolean} ignoreSelection If true, do not restore the previous selection.
- */
-function closePopover(ignoreSelection = true) {
-  const popover = document.querySelector('.wysi-popover [aria-expanded="true"]')
-  if (popover) toggleButton(popover, false)
+const closePopover = (ignoreSelection = true) => {
+  document.querySelector('.wysi-popover [aria-expanded="true"]')?.setAttribute('aria-expanded', 'false')
   if (!ignoreSelection) restoreCurrentSelection()
 }
 
-// Open a popover
-addListener(document, 'click', '.wysi-popover > button', event => {
+// Event listeners
+addListener(document, 'click', '.wysi-popover > button', (e) => {
+  e.stopPropagation()
+  e.stopImmediatePropagation()
   closePopover()
-  openPopover(event.target)
+  popoverJustOpened = true
+  openPopover(e.target)
 })
 
-// On key press on the popover button
-addListener(document, 'keydown', '.wysi-popover > button', event => {
-  switch (event.key) {
-    case 'ArrowUp':
-    case 'ArrowDown':
-    case 'Enter':
-    case ' ':
-      openPopover(event.target)
-      event.preventDefault()
-      break
+addListener(document, 'keydown', '.wysi-popover > button', (e) => {
+  if (['ArrowUp', 'ArrowDown', 'Enter', ' '].includes(e.key)) {
+    openPopover(e.target)
+    e.preventDefault()
   }
 })
 
-// Execute the popover action
-addListener(document, 'click', '.wysi-popover > div > button[data-action]', event => {
-  execPopoverAction(event.target)
+addListener(document, 'click', '.wysi-popover > div > button[data-action]', (e) => {
+  execPopoverAction(e.target)
   closePopover(true)
 })
 
-// Cancel the popover
-addListener(document, 'click', '.wysi-popover > div > button:not([data-action])', () => {
-  closePopover()
-})
+addListener(document, 'click', '.wysi-popover > div > button:not([data-action])', () => closePopover())
 
-// Prevent clicks on the popover content to propagate (keep popover open)
-addListener(document, 'click', '.wysi-popover *:not(button)', event => {
-  event.stopImmediatePropagation()
-})
+addListener(document, 'click', '.wysi-popover *:not(button)', (e) => e.stopImmediatePropagation())
 
-// Trap focus inside a popover until it's closed
-addListener(document, 'keydown', '.wysi-popover *', event => {
-  const target = event.target
-  const parent = target.parentNode
-  const form = parent.tagName === 'DIV' ? parent : parent.parentNode
+addListener(document, 'keydown', '.wysi-popover *', (e) => {
+  const { target } = e
+  const form = target.parentNode.tagName === 'DIV' ? target.parentNode : target.parentNode.parentNode
 
-  switch (event.key) {
+  switch (e.key) {
     case 'Tab':
       const firstField = form.querySelector('input')
-
-      if (event.shiftKey) {
-        if (target === firstField) {
-          form.lastElementChild.focus()
-          event.preventDefault()
-        }
-      } else {
-        if (!target.nextElementSibling && !target.parentNode.nextElementSibling) {
-          firstField.focus()
-          event.preventDefault()
-        }
+      const lastField = !target.nextElementSibling && !target.parentNode.nextElementSibling
+      
+      if (e.shiftKey && target === firstField) {
+        form.lastElementChild.focus()
+        e.preventDefault()
+      } else if (!e.shiftKey && lastField) {
+        firstField.focus()
+        e.preventDefault()
       }
       break
     case 'Enter':
       if (target.tagName === 'INPUT') {
-        const actionButton = form.querySelector('[data-action]:last-of-type')
-
-        actionButton.click()
-        event.preventDefault()
+        form.querySelector('[data-action]:last-of-type').click()
+        e.preventDefault()
       }
       break
     case 'Escape':
       closePopover()
-      event.stopImmediatePropagation()
+      e.stopImmediatePropagation()
       break
   }
 })
 
 let isSelectionInProgress = false
-
-// Close open popups and dropdowns on click outside
+let popoverJustOpened = false
 addListener(document, 'click', () => {
-  if (!isSelectionInProgress) closePopover()
+  if (!isSelectionInProgress && !popoverJustOpened) closePopover()
+  popoverJustOpened = false
 })
-
-// Text selection within a popover is in progress
-// This helps avoid closing a popover when the end of a text selection is outside it
-addListener(document, 'mousedown', '.wysi-popover, .wysi-popover *', () => {
-  isSelectionInProgress = true
-})
-
-// The text selection ended
-addListener(document, 'mouseup', () => {
-  setTimeout(() => { isSelectionInProgress = false })
-})
-
-export { renderPopover }

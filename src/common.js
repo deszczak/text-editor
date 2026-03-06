@@ -3,66 +3,51 @@ import document from 'document'
 // Instances storage
 export const instances = {}
 
-// The CSS class to use for selected elements
+// CSS classes
 export const selectedClass = 'wysi-selected'
-
-// Placeholder elements CSS class
 export const placeholderClass = 'wysi-fragment-placeholder'
 
-// Heading elements
+// Element categories
 export const headingElements = ['H1', 'H2', 'H3', 'H4']
+export const blockElements = ['BLOCKQUOTE', 'HR', 'P', 'OL', 'UL', ...headingElements]
 
-// Block type HTML elements
-export const blockElements = ['BLOCKQUOTE', 'HR', 'P', 'OL', 'UL'].concat(headingElements)
-
-// Detect Firefox browser
-export const isFirefox = navigator.userAgent.search(/Gecko\//) > -1
+// Browser detection
+export const isFirefox = navigator.userAgent.includes('Gecko/')
 
 /**
- * Create an element and optionally set its attributes.
- * @param {string} tag The HTML tag of the new element.
- * @param {object} attributes The element's attributes.
- * @return {HTMLElement} An HTML element.
+ * Create an element with optional attributes.
+ * @param {string} tag - HTML tag name
+ * @param {object} attrs - Element attributes (prefix with _ for properties)
+ * @returns {HTMLElement}
  */
-export function createElement(tag, attributes) {
-  const element = document.createElement(tag)
+export function createElement(tag, attrs = {}) {
+  const el = document.createElement(tag)
 
-  if (attributes) {
-    for (const attributeName in attributes) {
-      // Attribute names starting with underscore are actually properties
-      if (attributeName[0] === '_') {
-        element[attributeName.substring(1)] = attributes[attributeName]
-      } else element.setAttribute(attributeName, attributes[attributeName])
-    }
+  for (const [key, val] of Object.entries(attrs)) {
+    if (key[0] === '_') el[key.slice(1)] = val
+    else el.setAttribute(key, val)
   }
 
-  return element
+  return el
 }
 
 /**
- * Replace a DOM element with another while preserving its content.
- * @param {Node || HTMLElement} node The element to replace.
- * @param {string} tag The HTML tag of the new element.
- * @param {boolean} [copyAttributes] If true, also copy the original element's attributes.
- * @return {HTMLElement || Node} The new element/Node.
+ * Replace a DOM element while preserving content.
+ * @param {HTMLElement} node - Element to replace
+ * @param {string} tag - New element tag
+ * @param {boolean} copyAttrs - Copy original attributes
+ * @returns {HTMLElement}
  */
-export function replaceNode(node, tag, copyAttributes) {
-  const newElement = createElement(tag)
-  const parentNode = node.parentNode
-  const attributes = node.attributes
+export function replaceNode(node, tag, copyAttrs = false) {
+  const newEl = createElement(tag)
+  newEl.innerHTML = node.innerHTML || node.textContent || node.outerHTML
 
-  // Copy the original element's content
-  newElement.innerHTML = node.innerHTML || node.textContent || node.outerHTML
-
-  // Copy the original element's attributes
-  if (copyAttributes && attributes) {
-    for (let i = 0; i < attributes.length; i++) {
-      newElement.setAttribute(attributes[i].name, attributes[i].value)
+  if (copyAttrs && node.attributes) {
+    for (const attr of node.attributes) {
+      newEl.setAttribute(attr.name, attr.value)
     }
   }
 
-  // Replace the element
-  parentNode.replaceChild(newElement, node)
-
-  return newElement
+  node.parentNode.replaceChild(newEl, node)
+  return newEl
 }
