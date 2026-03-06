@@ -3,52 +3,15 @@
  * Licensed under the MIT License (MIT)
  * https://github.com/mdbassit/Wysi
  */
-(function (window, document) {
+(function (window, document$1) {
   'use strict';
-
-  function _unsupportedIterableToArray(o, minLen) {
-    if (!o) return;
-    if (typeof o === "string") return _arrayLikeToArray(o, minLen);
-    var n = Object.prototype.toString.call(o).slice(8, -1);
-    if (n === "Object" && o.constructor) n = o.constructor.name;
-    if (n === "Map" || n === "Set") return Array.from(o);
-    if (n === "Arguments" || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(n)) return _arrayLikeToArray(o, minLen);
-  }
-  function _arrayLikeToArray(arr, len) {
-    if (len == null || len > arr.length) len = arr.length;
-    for (var i = 0, arr2 = new Array(len); i < len; i++) arr2[i] = arr[i];
-    return arr2;
-  }
-  function _createForOfIteratorHelperLoose(o, allowArrayLike) {
-    var it = typeof Symbol !== "undefined" && o[Symbol.iterator] || o["@@iterator"];
-    if (it) return (it = it.call(o)).next.bind(it);
-    if (Array.isArray(o) || (it = _unsupportedIterableToArray(o)) || allowArrayLike && o && typeof o.length === "number") {
-      if (it) o = it;
-      var i = 0;
-      return function () {
-        if (i >= o.length) return {
-          done: true
-        };
-        return {
-          done: false,
-          value: o[i++]
-        };
-      };
-    }
-    throw new TypeError("Invalid attempt to iterate non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method.");
-  }
 
   // Default settings
   var settings = {
     // Default selector
     el: '[data-wysi], .wysi-field',
     // Default tools in the toolbar
-    tools: ['format', '|', 'bold', 'italic', '|', {
-      label: 'Text alignment',
-      items: ['alignLeft', 'alignCenter', 'alignRight', 'alignJustify']
-    }, '|', 'ul', 'ol', '|', 'indent', 'outdent', '|', 'link', 'image'],
-    // Enable dark mode (toolbar only)
-    darkMode: false,
+    tools: ['format', '|', 'bold', 'italic', 'underline', 'strike', 'highlight', '|', 'ul', 'ol', '|', 'link', 'hr', 'quote', '|', 'autoFormat', '|', 'removeFormat'],
     // Height of the editable region
     height: 200,
     // Grow the editable region's height to fit its content
@@ -86,7 +49,6 @@
   var toolset = {
     format: {
       tags: ['p', 'h1', 'h2', 'h3', 'h4'],
-      styles: ['text-align'],
       label: 'Select block format',
       paragraph: 'Paragraph',
       heading: 'Heading'
@@ -94,6 +56,10 @@
     quote: {
       tags: ['blockquote'],
       label: 'Quote'
+    },
+    highlight: {
+      tags: ['mark'],
+      label: 'Highlight'
     },
     bold: {
       tags: ['strong'],
@@ -115,41 +81,17 @@
       label: 'Strike-through',
       command: 'strikeThrough'
     },
-    alignLeft: {
-      label: 'Align left',
-      command: 'justifyLeft'
-    },
-    alignCenter: {
-      label: 'Align center',
-      command: 'justifyCenter'
-    },
-    alignRight: {
-      label: 'Align right',
-      command: 'justifyRight'
-    },
-    alignJustify: {
-      label: 'Justify',
-      command: 'justifyFull'
-    },
     ul: {
       tags: ['ul'],
       extraTags: ['li'],
-      styles: ['text-align'],
       label: 'Bulleted list',
       command: 'insertUnorderedList'
     },
     ol: {
       tags: ['ol'],
       extraTags: ['li'],
-      styles: ['text-align'],
       label: 'Numbered list',
       command: 'insertOrderedList'
-    },
-    indent: {
-      label: 'Increase indent'
-    },
-    outdent: {
-      label: 'Decrease indent'
     },
     link: {
       tags: ['a'],
@@ -166,65 +108,6 @@
         }]
       },
       label: 'Link'
-    },
-    image: {
-      tags: ['img'],
-      attributes: ['src', 'alt'],
-      attributeLabels: ['URL', 'Alternative text'],
-      extraSettings: ['size', 'position'],
-      extraSettingLabels: ['Image size', 'Image position'],
-      styles: ['width', 'display', 'margin', 'float'],
-      isEmpty: true,
-      hasForm: true,
-      formOptions: {
-        size: [{
-          label: 'None',
-          value: '',
-          criterion: null
-        }, {
-          label: '100%',
-          value: '100%',
-          criterion: {
-            width: '100%'
-          }
-        }, {
-          label: '50%',
-          value: '50%',
-          criterion: {
-            width: '50%'
-          }
-        }, {
-          label: '25%',
-          value: '25%',
-          criterion: {
-            width: '25%'
-          }
-        }],
-        position: [{
-          label: 'None',
-          value: '',
-          criterion: null
-        }, {
-          label: 'Left',
-          value: 'left',
-          criterion: {
-            float: 'left'
-          }
-        }, {
-          label: 'Center',
-          value: 'center',
-          criterion: {
-            margin: 'auto'
-          }
-        }, {
-          label: 'Right',
-          value: 'right',
-          criterion: {
-            float: 'right'
-          }
-        }]
-      },
-      label: 'Image'
     },
     hr: {
       tags: ['hr'],
@@ -861,7 +744,7 @@
    * @param {HTMLScriptElement[]} markers The start marker comment node.
    * @param {boolean} removeMarkers Whether to remove the markers after restoring (default: true).
    */
-  function restoreSelection(markers, removeMarkers) {
+  function restoreMarkerSelection(markers, removeMarkers) {
     if (removeMarkers === void 0) {
       removeMarkers = true;
     }
@@ -992,6 +875,39 @@
       }
       document$1.body.removeChild(textarea);
     }
+  }
+
+  /**
+   * Show a toast notification message.
+   * @param {string} message The message to display.
+   * @param {HTMLElement} editor The editor element to position the toast relative to.
+   */
+  function showToast(message, editor) {
+    // Remove any existing toast
+    const existingToast = document$1.querySelector('.wysi-toast');
+    if (existingToast) {
+      existingToast.remove();
+    }
+
+    // Create toast element
+    const toast = document$1.createElement('div');
+    toast.className = 'wysi-toast';
+    toast.textContent = message;
+
+    // Find the editor wrapper or use the editor itself
+    const wrapper = (editor == null ? void 0 : editor.closest('.wysi-wrapper')) || editor;
+    if (wrapper) wrapper.appendChild(toast);else document$1.body.appendChild(toast);
+
+    // Trigger animation
+    requestAnimationFrame(() => toast.classList.add('wysi-toast--visible'));
+
+    // Remove after delay
+    setTimeout(() => {
+      toast.classList.remove('wysi-toast--visible');
+      setTimeout(() => {
+        toast.remove();
+      }, 300);
+    }, 2000);
   }
 
   /**
@@ -1160,10 +1076,254 @@
     return markdown.trim();
   }
 
+  // Maximum number of undo/redo steps to keep
+  const MAX_HISTORY_SIZE = 20;
+
+  // Store undo/redo state for each editor instance (now arrays for multiple steps)
+  const undoStack = new Map();
+  const redoStack = new Map();
+
+  /**
+   * Save the current state of an editor for undo functionality.
+   * @param {HTMLElement} editor The editor element.
+   */
+  function saveState(editor) {
+    if (!editor) return;
+    const instanceId = editor.dataset.wid;
+    if (!instanceId) return;
+
+    // Get or create the undo stack for this instance
+    let stack = undoStack.get(instanceId);
+    if (!stack) {
+      stack = [];
+      undoStack.set(instanceId, stack);
+    }
+
+    // Save the current state
+    const state = {
+      html: editor.innerHTML,
+      selection: saveSelection(editor)
+    };
+
+    // Add to stack, limiting size
+    stack.push(state);
+    if (stack.length > MAX_HISTORY_SIZE) {
+      stack.shift(); // Remove oldest state
+    }
+
+    // Clear the redo stack when a new action is performed
+    redoStack.delete(instanceId);
+  }
+
+  /**
+   * Undo the last action for an editor.
+   * @param {HTMLElement} editor The editor element.
+   * @returns {boolean} True if undo was performed, false otherwise.
+   */
+  function undo(editor) {
+    if (!editor) return false;
+    const instanceId = editor.dataset.wid;
+    if (!instanceId) return false;
+    const undoStates = undoStack.get(instanceId);
+    if (!undoStates || undoStates.length === 0) return false;
+
+    // Get or create the redo stack for this instance
+    let redoStates = redoStack.get(instanceId);
+    if (!redoStates) {
+      redoStates = [];
+      redoStack.set(instanceId, redoStates);
+    }
+
+    // Save current state to redo stack
+    const currentState = {
+      html: editor.innerHTML,
+      selection: saveSelection(editor)
+    };
+    redoStates.push(currentState);
+    if (redoStates.length > MAX_HISTORY_SIZE) {
+      redoStates.shift();
+    }
+
+    // Restore the previous state from undo stack
+    const previousState = undoStates.pop();
+    editor.innerHTML = previousState.html;
+    restoreSelection(editor, previousState.selection);
+
+    // Dispatch input event to update the textarea and toolbar
+    editor.dispatchEvent(new Event('input', {
+      bubbles: true
+    }));
+    return true;
+  }
+
+  /**
+   * Redo the last undone action for an editor.
+   * @param {HTMLElement} editor The editor element.
+   * @returns {boolean} True if redo was performed, false otherwise.
+   */
+  function redo(editor) {
+    if (!editor) return false;
+    const instanceId = editor.dataset.wid;
+    if (!instanceId) return false;
+    const redoStates = redoStack.get(instanceId);
+    if (!redoStates || redoStates.length === 0) return false;
+
+    // Get or create the undo stack for this instance
+    let undoStates = undoStack.get(instanceId);
+    if (!undoStates) {
+      undoStates = [];
+      undoStack.set(instanceId, undoStates);
+    }
+
+    // Save current state to undo stack
+    const currentState = {
+      html: editor.innerHTML,
+      selection: saveSelection(editor)
+    };
+    undoStates.push(currentState);
+    if (undoStates.length > MAX_HISTORY_SIZE) {
+      undoStates.shift();
+    }
+
+    // Restore the next state from redo stack
+    const nextState = redoStates.pop();
+    editor.innerHTML = nextState.html;
+    restoreSelection(editor, nextState.selection);
+
+    // Dispatch input event to update the textarea and toolbar
+    editor.dispatchEvent(new Event('input', {
+      bubbles: true
+    }));
+    return true;
+  }
+
+  /**
+   * Check if undo is available for an editor.
+   * @param {HTMLElement} editor The editor element.
+   * @returns {boolean} True if undo is available.
+   */
+  function canUndo(editor) {
+    if (!editor) return false;
+    const instanceId = editor.dataset.wid;
+    if (!instanceId) return false;
+    const stack = undoStack.get(instanceId);
+    return stack && stack.length > 0;
+  }
+
+  /**
+   * Check if redo is available for an editor.
+   * @param {HTMLElement} editor The editor element.
+   * @returns {boolean} True if redo is available.
+   */
+  function canRedo(editor) {
+    if (!editor) return false;
+    const instanceId = editor.dataset.wid;
+    if (!instanceId) return false;
+    const stack = redoStack.get(instanceId);
+    return stack && stack.length > 0;
+  }
+
+  /**
+   * Clear undo/redo stacks for an editor.
+   * @param {HTMLElement} editor The editor element.
+   */
+  function clearHistory(editor) {
+    if (!editor) return;
+    const instanceId = editor.dataset.wid;
+    if (instanceId) {
+      undoStack.delete(instanceId);
+      redoStack.delete(instanceId);
+    }
+  }
+
+  /**
+   * Save the current selection in an editor.
+   * @param {HTMLElement} editor The editor element.
+   * @returns {object|null} Selection state object or null.
+   */
+  function saveSelection(editor) {
+    const selection = document$1.getSelection();
+    if (!selection || selection.rangeCount === 0) return null;
+    const range = selection.getRangeAt(0);
+
+    // Check if selection is within the editor
+    if (!editor.contains(range.commonAncestorContainer)) {
+      return null;
+    }
+    return {
+      startContainer: getNodePath(editor, range.startContainer),
+      startOffset: range.startOffset,
+      endContainer: getNodePath(editor, range.endContainer),
+      endOffset: range.endOffset
+    };
+  }
+
+  /**
+   * Restore a saved selection in an editor.
+   * @param {HTMLElement} editor The editor element.
+   * @param {object} savedSelection The saved selection state.
+   */
+  function restoreSelection(editor, savedSelection) {
+    if (!savedSelection) return;
+    try {
+      const startContainer = getNodeFromPath(editor, savedSelection.startContainer);
+      const endContainer = getNodeFromPath(editor, savedSelection.endContainer);
+      if (!startContainer || !endContainer) return;
+      const range = document$1.createRange();
+      range.setStart(startContainer, savedSelection.startOffset);
+      range.setEnd(endContainer, savedSelection.endOffset);
+      const selection = document$1.getSelection();
+      selection.removeAllRanges();
+      selection.addRange(range);
+    } catch (e) {
+      // If restoration fails, place cursor at the beginning
+      editor.focus();
+    }
+  }
+
+  /**
+   * Get the path of a node relative to the editor root.
+   * @param {HTMLElement} root The root element (editor).
+   * @param {Node} node The target node.
+   * @returns {number[]} Array of child indices representing the path.
+   */
+  function getNodePath(root, node) {
+    const path = [];
+    let current = node;
+    while (current && current !== root) {
+      const parent = current.parentNode;
+      if (!parent) break;
+      const index = Array.from(parent.childNodes).indexOf(current);
+      path.unshift(index);
+      current = parent;
+    }
+    return path;
+  }
+
+  /**
+   * Get a node from a path relative to the editor root.
+   * @param {HTMLElement} root The root element (editor).
+   * @param {number[]} path Array of child indices representing the path.
+   * @returns {Node|null} The target node or null.
+   */
+  function getNodeFromPath(root, path) {
+    let current = root;
+    for (const index of path) {
+      if (!current.childNodes || index >= current.childNodes.length) {
+        return null;
+      }
+      current = current.childNodes[index];
+    }
+    return current;
+  }
+
+  // Set to track editors that should suppress input events during execCommand
+  const suppressInputEvents = new WeakSet();
+
   /**
    * Execute an action.
    * @param {string} action The action to execute.
-   * @param {object} editor The editor instance.
+   * @param {HTMLElement} editor The editor instance.
    * @param {array || object} options Optional action parameters.
    */
   function execAction(action, editor, options) {
@@ -1177,8 +1337,11 @@
       // Restore selection if any
       restoreCurrentSelection();
 
+      // Save state before executing the action (for undo)
+      saveState(editor);
+
       // Execute the tool's action
-      execEditorCommand(command, options);
+      execEditorCommand(editor, command, options);
       editor.normalize();
 
       // Focus the editor instance
@@ -1188,10 +1351,11 @@
 
   /**
    * Execute an editor command.
+   * @param {Element} editor The editor instance.
    * @param {string} command The command to execute.
    * @param {array || object} options Optional command parameters.
    */
-  function execEditorCommand(command, options) {
+  function execEditorCommand(editor, command, options) {
     switch (command) {
       // Block level formatting
       case 'quote':
@@ -1201,7 +1365,7 @@
             selection
           } = options;
           if (state) {
-            revertState(command, selection);
+            revertState(editor, command, selection);
             break;
           }
         }
@@ -1214,7 +1378,7 @@
             selection
           } = options;
           if (state) {
-            revertState('hr', selection);
+            revertState(editor, 'hr', selection);
             break;
           } else {
             execCommand(command);
@@ -1247,19 +1411,25 @@
             selection
           } = options;
           if (state) {
-            revertState(command, selection);
+            revertState(editor, command, selection);
             break;
           } else {
             const markers = placeSelectionMarkers(selection);
+            // Suppress input events during execCommand to avoid duplicate events
+            suppressInputEvents.add(editor);
             execCommand('hiliteColor', "#ffff00");
+            suppressInputEvents.delete(editor);
             const nodes = getSelectedNodes();
             nodes.forEach(n => n.tagName === 'SPAN' && replaceNode(n, 'mark').classList.add(selectedClass));
             const newMarkers = getNewMarkerReferences(markers);
-            restoreSelection(newMarkers);
+            restoreMarkerSelection(newMarkers);
+            editor.dispatchEvent(new Event('input', {
+              bubbles: true
+            }));
             break;
           }
         }
-        console.log('Error when trying to highlight.');
+        console.error('Error when trying to highlight.');
         break;
       case 'autoFormat':
         const sel = document.getSelection();
@@ -1267,16 +1437,27 @@
         if (sel.rangeCount > 0 && !sel.isCollapsed) {
           container = sel.getRangeAt(0).commonAncestorContainer;
           if (container.nodeType !== Node.ELEMENT_NODE) container = container.parentElement;
-        } else {
-          container = document.querySelector('.wysi-editor:focus') || document.querySelector('.wysi-editor');
         }
-        if (container) formatTextNodes(container);
+        formatTextNodes(container || editor);
+        editor.dispatchEvent(new Event('input', {
+          bubbles: true
+        }));
+        showToast('Formatted Text', editor);
         break;
       case 'markdownExport':
-        const editor = document.querySelector('.wysi-editor:focus') || document.querySelector('.wysi-editor');
         if (editor) {
           const markdown = htmlToMarkdown(editor);
           copyToClipboard(markdown);
+          showToast('Markdown copied to clipboard', editor);
+        }
+        break;
+      case 'removeFormat':
+        const {
+          selection
+        } = options;
+        execCommand(command);
+        if (editor && selection.type === 'Range') {
+          showToast('Formatting removed', editor);
         }
         break;
 
@@ -1289,10 +1470,11 @@
   /**
    * Revert a formatting command and restore the selection properly.
    * Uses marker-based selection saving to handle multi-node selections correctly.
+   * @param {Element} editor The editor instance.
    * @param {string} command The command to execute.
    * @param {Selection} selection Selection to revert to.
    */
-  function revertState(command, selection) {
+  function revertState(editor, command, selection) {
     const anchor = selection.anchorNode;
     const elementToModify = anchor.tagName ? anchor : anchor.parentNode;
 
@@ -1314,8 +1496,10 @@
     const newMarkerReferences = getNewMarkerReferences(markers);
 
     // Restore selection using the markers
-    restoreSelection(newMarkerReferences);
-    // document.querySelector('.wysi-editor').dispatchEvent(new Event('input'));
+    restoreMarkerSelection(newMarkerReferences);
+    editor.dispatchEvent(new Event('input', {
+      bubbles: true
+    }));
   }
 
   // Used to give form fields unique ids
@@ -2098,351 +2282,84 @@
   }
 
   // Deselect selected element when clicking outside
-  addListener(document, 'mousedown', '.wysi-editor, .wysi-editor *', function (event) {
-    var selected = document.querySelector("." + selectedClass);
+  addListener(document$1, 'mousedown', '.wysi-editor, .wysi-editor *', event => {
+    const selected = document$1.querySelector("." + selectedClass);
     if (selected && selected !== event.target) {
       selected.classList.remove(selectedClass);
     }
   });
 
-  // Select an image when it's clicked
-  addListener(document, 'mousedown', '.wysi-editor img', function (event) {
-    var image = event.target;
-    var range = document.createRange();
-    image.classList.add(selectedClass);
-    range.selectNode(image);
-    setSelection(range);
+  // "Select" a highlight when it's clicked
+  addListener(document$1, 'mousedown', '.wysi-editor mark', event => {
+    const highlight = event.target;
+    highlight.classList.add(selectedClass);
   });
 
   // Toolbar button click
-  addListener(document, 'click', '.wysi-toolbar > button', function (event) {
-    var button = event.target;
-    var action = button.dataset.action;
-    var _findInstance2 = findInstance(button),
-      editor = _findInstance2.editor;
-    var selection = document.getSelection();
+  addListener(document$1, 'click', '.wysi-toolbar > button', event => {
+    const button = event.target;
+    const state = JSON.parse(button.getAttribute('aria-pressed'));
+    const action = button.dataset.action;
+    const {
+      editor
+    } = findInstance(button);
+    const selection = document$1.getSelection();
     if (selection && editor.contains(selection.anchorNode)) {
-      execAction(action, editor);
+      execAction(action, editor, {
+        state,
+        selection
+      });
     }
   });
 
   // Update the toolbar buttons state
-  addListener(document, 'selectionchange', updateToolbarState);
-  addListener(document, 'input', '.wysi-editor', updateToolbarState);
+  addListener(document$1, 'selectionchange', updateToolbarState);
+  addListener(document$1, 'input', '.wysi-editor', updateToolbarState);
 
   // include SVG icons
   DOMReady(embedSVGIcons);
 
-  var STYLE_ATTRIBUTE = 'style';
-  var ALIGN_ATTRIBUTE = 'align';
-
-  /**
-   * Enable HTML tags belonging to a set of tools.
-   * @param {array} tools A array of tool objects.
-   * @return {object} The list of allowed tags.
-   */
-  function enableTags(tools) {
-    var allowedTags = cloneObject(settings.allowedTags);
-    tools.forEach(function (toolName) {
-      var tool = cloneObject(toolset[toolName]);
-      if (!tool || !tool.tags) {
-        return;
-      }
-      var isEmpty = !!tool.isEmpty;
-      var extraTags = tool.extraTags || [];
-      var aliasList = tool.alias || [];
-      var alias = aliasList.length ? tool.tags[0] : undefined;
-      var tags = [].concat(tool.tags, extraTags, aliasList);
-      var attributes = tool.attributes || [];
-      var styles = tool.styles || [];
-      tags.forEach(function (tag) {
-        allowedTags[tag] = {
-          attributes: attributes,
-          styles: styles,
-          alias: alias,
-          isEmpty: isEmpty
-        };
-        if (!extraTags.includes(tag)) {
-          allowedTags[tag].toolName = toolName;
-        }
-      });
-    });
-    return allowedTags;
-  }
-
-  /**
-   * Prepare raw content for editing.
-   * @param {string} content The raw content.
-   * @param {array} allowedTags The list of allowed tags.
-   * @param {boolean} filterOnly If true, only filter the content, without further cleaning.
-   * @return {string} The filtered HTML content.
-   */
-  function prepareContent(content, allowedTags, filterOnly) {
-    var container = createElement('div');
-    var fragment = buildFragment(content);
-    filterContent(fragment, allowedTags);
-    if (!filterOnly) {
-      wrapTextNodes(fragment);
-      cleanContent(fragment, allowedTags);
-    }
-    container.appendChild(fragment);
-    return container.innerHTML;
-  }
-
-  /**
-   * Replace a DOM element with another while preserving its content.
-   * @param {object} node The element to replace.
-   * @param {string} tag The HTML tag of the new element.
-   * @param {boolean} [copyAttributes] If true, also copy the original element's attributes.
-   */
-  function replaceNode(node, tag, copyAttributes) {
-    var newElement = createElement(tag);
-    var parentNode = node.parentNode;
-    var attributes = node.attributes;
-
-    // Copy the original element's content
-    newElement.innerHTML = node.innerHTML || node.textContent || node.outerHTML;
-
-    // Copy the original element's attributes
-    if (copyAttributes && attributes) {
-      for (var i = 0; i < attributes.length; i++) {
-        newElement.setAttribute(attributes[i].name, attributes[i].value);
-      }
-    }
-
-    // Replace the element
-    parentNode.replaceChild(newElement, node);
-  }
-
-  /**
-   * Remove unsupported CSS styles from a node.
-   * @param {object} node The element to filter.
-   * @param {array} allowedStyles An array of supported styles.
-   */
-  function filterStyles(node, allowedStyles) {
-    var styleAttribute = node.getAttribute(STYLE_ATTRIBUTE);
-    if (styleAttribute) {
-      // Parse the styles
-      var styles = styleAttribute.split(';').map(function (style) {
-        var prop = style.split(':');
-        return {
-          name: prop[0].trim(),
-          value: prop[1]
-        };
-      })
-      // Filter the styles
-      .filter(function (style) {
-        return allowedStyles.includes(style.name);
-      })
-
-      // Remove text-align: left
-      .filter(function (style) {
-        return style.name !== 'text-align' || style.value.trim() !== 'left';
-      })
-
-      // Convert back to a style string
-      .map(function (_ref) {
-        var name = _ref.name,
-          value = _ref.value;
-        return name + ": " + value.trim() + ";";
-      }).join('');
-      if (styles !== '') {
-        node.setAttribute(STYLE_ATTRIBUTE, styles);
-      } else {
-        node.removeAttribute(STYLE_ATTRIBUTE);
-      }
-    }
-  }
-
-  /**
-   * Remove unsupported HTML tags and attributes.
-   * @param {object} node The parent element to filter recursively.
-   * @param {array} allowedTags The list of allowed tags.
-   */
-  function filterContent(node, allowedTags) {
-    var children = Array.from(node.childNodes);
-    if (!children || !children.length) {
-      return;
-    }
-    children.forEach(function (childNode) {
-      // Element nodes
-      if (childNode.nodeType === 1) {
-        // Filter recursively (deeper nodes first)
-        filterContent(childNode, allowedTags);
-
-        // Check if the current element is allowed
-        var tag = childNode.tagName.toLowerCase();
-        var allowedTag = allowedTags[tag];
-        var attributes = Array.from(childNode.attributes);
-
-        // Check for the deprecated align attribute (mainly in Firefox)
-        var deprecatedAlignAttribute = childNode.getAttribute(ALIGN_ATTRIBUTE);
-        if (allowedTag) {
-          var allowedAttributes = allowedTag.attributes || [];
-          var allowedStyles = allowedTag.styles || [];
-
-          // Remove attributes that are not allowed
-          for (var i = 0; i < attributes.length; i++) {
-            var attributeName = attributes[i].name;
-            if (!allowedAttributes.includes(attributes[i].name)) {
-              // Replace deprecated align attribute with text-align style
-              if (attributeName === ALIGN_ATTRIBUTE) {
-                if (deprecatedAlignAttribute !== 'left') {
-                  childNode.style.textAlign = deprecatedAlignAttribute;
-                }
-              }
-              if (attributeName === STYLE_ATTRIBUTE && allowedStyles.length) {
-                filterStyles(childNode, allowedStyles);
-              } else {
-                childNode.removeAttribute(attributes[i].name);
-              }
-            }
-          }
-
-          // If the tag is an alias, replace it with the standard tag
-          // e.g: <b> tags will be replaced with <strong> tags
-          if (allowedTag.alias) {
-            replaceNode(childNode, allowedTag.alias, true);
-          }
-        } else {
-          // Remove style nodes
-          if (tag === 'style') {
-            node.removeChild(childNode);
-
-            // And unwrap the other nodes
-          } else {
-            // Fix bad alignment handling on Firefox
-            if (deprecatedAlignAttribute !== null) {
-              if (childNode.parentNode && childNode.parentNode.tagName === 'LI') {
-                childNode.parentNode.style.textAlign = deprecatedAlignAttribute;
-              } else {
-                for (var _iterator = _createForOfIteratorHelperLoose(childNode.childNodes), _step; !(_step = _iterator()).done;) {
-                  var divChild = _step.value;
-                  divChild.style.textAlign = deprecatedAlignAttribute;
-                }
-              }
-            }
-            childNode.replaceWith.apply(childNode, childNode.childNodes);
-          }
-        }
-
-        // Remove comment nodes
-      } else if (childNode.nodeType === 8) {
-        node.removeChild(childNode);
-      }
-    });
-  }
-
-  /**
-   * Remove empty nodes.
-   * @param {object} node The parent element to filter recursively.
-   * @param {array} allowedTags The list of allowed tags.
-   */
-  function cleanContent(node, allowedTags) {
-    var children = Array.from(node.childNodes);
-    if (!children || !children.length) {
-      return;
-    }
-    children.forEach(function (childNode) {
-      // Remove empty element nodes
-      if (childNode.nodeType === 1) {
-        // Filter recursively (deeper nodes first)
-        cleanContent(childNode, allowedTags);
-
-        // Check if the element can be empty
-        var tag = childNode.tagName.toLowerCase();
-        var allowedTag = allowedTags[tag];
-        if (allowedTag && !allowedTag.isEmpty && trimText(childNode.innerHTML) === '') {
-          node.removeChild(childNode);
-        }
-      }
-    });
-  }
-
-  /**
-   * Wrap the child text nodes in a paragraph (non-recursively).
-   * @param {object} node The parent element of the text nodes.
-   */
-  function wrapTextNodes(node) {
-    var children = Array.from(node.childNodes);
-    if (!children || !children.length) {
-      return;
-    }
-    var appendToPrev = false;
-    children.forEach(function (childNode) {
-      if (childNode.nodeType !== 3 && blockElements.includes(childNode.tagName)) {
-        appendToPrev = false;
-        return;
-      }
-
-      // Remove empty text node
-      /*if (trimText(childNode.textContent) === '') {
-        node.removeChild(childNode);
-       // Wrap text node in a paragraph
-      } else {*/
-      if (appendToPrev) {
-        var prev = childNode.previousElementSibling;
-        if (prev) {
-          prev.appendChild(childNode);
-        }
-      } else {
-        replaceNode(childNode, 'p');
-        appendToPrev = true;
-      }
-      /*}*/
-    });
-  }
-
-  /**
-   * Trim whitespace from the start and end of a text.
-   * @param {string} text The text to trim.
-   * @return {string} The trimmed text.
-   */
-  function trimText(text) {
-    return text.replace(/^\s+|\s+$/g, '').trim();
-  }
-
   // Next available instance id
-  var nextId = 0;
+  let nextId = 0;
 
   /**
    * Init WYSIWYG editor instances.
    * @param {object} options Configuration options.
    */
   function init(options) {
-    var globalTranslations = window.wysiGlobalTranslations || {};
-    var translations = Object.assign({}, globalTranslations, options.translations || {});
+    const globalTranslations = window.wysiGlobalTranslations || {};
+    const translations = Object.assign({}, globalTranslations, options.translations || {});
 
     // Store translated strings
     storeTranslations(translations);
-    var tools = options.tools || settings.tools;
-    var selector = options.el || settings.el;
-    var targetEls = getTargetElements(selector);
-    var toolbar = renderToolbar(tools);
-    var allowedTags = enableTags(tools);
-    var customTags = options.customTags || [];
+    const tools = options.tools || settings.tools;
+    const selector = options.el || settings.el;
+    const targetEls = getTargetElements(selector);
+    const toolbar = renderToolbar(tools);
+    const allowedTags = enableTags(tools);
+    const customTags = options.customTags || [];
 
     // Add custom tags if any to the allowed tags list
-    customTags.forEach(function (custom) {
+    customTags.forEach(custom => {
       if (custom.tags) {
-        var attributes = custom.attributes || [];
-        var styles = custom.styles || [];
-        var isEmpty = !!custom.isEmpty;
-        custom.tags.forEach(function (tag) {
+        const attributes = custom.attributes || [];
+        const styles = custom.styles || [];
+        const isEmpty = !!custom.isEmpty;
+        custom.tags.forEach(tag => {
           allowedTags[tag] = {
-            attributes: attributes,
-            styles: styles,
-            isEmpty: isEmpty
+            attributes,
+            styles,
+            isEmpty
           };
         });
       }
     });
 
     // Append an editor instance to target elements
-    targetEls.forEach(function (field) {
-      var sibling = field.previousElementSibling;
+    targetEls.forEach(field => {
+      const sibling = field.previousElementSibling;
       if (!sibling || !hasClass(sibling, 'wysi-wrapper')) {
-        var instanceId = nextId++;
+        const instanceId = nextId++;
 
         // Store the instance's options 
         instances[instanceId] = options;
@@ -2451,12 +2368,12 @@
         instances[instanceId].allowedTags = cloneObject(allowedTags);
 
         // Wrapper
-        var wrapper = createElement('div', {
+        const wrapper = createElement('div', {
           class: 'wysi-wrapper'
         });
 
         // Editable region
-        var editor = createElement('div', {
+        const editor = createElement('div', {
           class: 'wysi-editor',
           contenteditable: true,
           role: 'textbox',
@@ -2490,17 +2407,16 @@
     if (typeof options !== 'object') {
       return;
     }
-    for (var key in options) {
+    for (const key in options) {
       switch (key) {
-        case 'darkMode':
         case 'autoGrow':
         case 'autoHide':
           instance.classList.toggle("wysi-" + key.toLowerCase(), !!options[key]);
           break;
         case 'height':
-          var height = options.height;
+          const height = options.height;
           if (!isNaN(height)) {
-            var editor = instance.lastChild;
+            const editor = instance.lastChild;
             editor.style.minHeight = height + "px";
             editor.style.maxHeight = height + "px";
           }
@@ -2518,9 +2434,9 @@
    * @param {boolean} setEditorContent Whether to update the content of the editable region.
    */
   function updateContent(textarea, editor, instanceId, rawContent, setEditorContent) {
-    var instance = instances[instanceId];
-    var content = prepareContent(rawContent, instance.allowedTags);
-    var onChange = instance.onChange;
+    const instance = instances[instanceId];
+    const content = prepareContent(rawContent, instance.allowedTags);
+    const onChange = instance.onChange;
     if (setEditorContent === true) {
       editor.innerHTML = content;
     }
@@ -2536,12 +2452,15 @@
    * @param {string} selector One or more selectors pointing to textarea fields.
    */
   function destroy(selector) {
-    var editorInstances = findEditorInstances(selector);
-    for (var _iterator = _createForOfIteratorHelperLoose(editorInstances), _step; !(_step = _iterator()).done;) {
-      var editorInstance = _step.value;
-      var instanceId = editorInstance.instanceId,
-        wrapper = editorInstance.wrapper;
+    const editorInstances = findEditorInstances(selector);
+    for (const editorInstance of editorInstances) {
+      const {
+        instanceId,
+        wrapper,
+        editor
+      } = editorInstance;
       delete instances[instanceId];
+      clearHistory(editor);
       wrapper.remove();
     }
   }
@@ -2549,15 +2468,18 @@
   /**
    * Set the content of a WYSIWYG editor instance programmatically.
    * @param {string} selector One or more selectors pointing to textarea fields.
+   * @param {string} content The new content of the editor instance.
    */
   function setContent(selector, content) {
-    var editorInstances = findEditorInstances(selector);
-    for (var _iterator2 = _createForOfIteratorHelperLoose(editorInstances), _step2; !(_step2 = _iterator2()).done;) {
-      var editorInstance = _step2.value;
-      var textarea = editorInstance.textarea,
-        editor = editorInstance.editor,
-        instanceId = editorInstance.instanceId;
+    const editorInstances = findEditorInstances(selector);
+    for (const editorInstance of editorInstances) {
+      const {
+        textarea,
+        editor,
+        instanceId
+      } = editorInstance;
       updateContent(textarea, editor, instanceId, content, true);
+      clearHistory(editor);
     }
   }
 
@@ -2566,25 +2488,24 @@
    * @param {object} event The browser's paste event.
    */
   function cleanPastedContent(event) {
-    var _findInstance = findInstance(event.target),
-      editor = _findInstance.editor,
-      nodes = _findInstance.nodes;
-    var clipboardData = event.clipboardData;
+    const {
+      editor,
+      nodes
+    } = findInstance(event.target);
+    const clipboardData = event.clipboardData;
     if (editor && clipboardData.types.includes('text/html')) {
-      var pasted = clipboardData.getData('text/html');
-      var instanceId = getInstanceId(editor);
-      var allowedTags = instances[instanceId].allowedTags;
-      var content = prepareContent(pasted, allowedTags);
+      const pasted = clipboardData.getData('text/html');
+      const instanceId = getInstanceId(editor);
+      const allowedTags = instances[instanceId].allowedTags;
+      let content = prepareContent(pasted, allowedTags);
 
       // Detect a heading tag in the current selection
-      var splitHeadingTag = nodes.filter(function (n) {
-        return headingElements.includes(n.tagName);
-      }).length > 0;
+      const splitHeadingTag = nodes.filter(n => headingElements.includes(n.tagName)).length > 0;
 
       // Force split the heading tag if any.
       // This fixes a bug in Webkit/Blink browsers where the whole content is converted to a heading
       if (splitHeadingTag && !isFirefox) {
-        var splitter = "<h1 class=\"" + placeholderClass + "\"><br></h1><p class=\"" + placeholderClass + "\"><br></p>";
+        const splitter = "<h1 class=\"" + placeholderClass + "\"><br></h1><p class=\"" + placeholderClass + "\"><br></p>";
         content = splitter + content + splitter;
       }
 
@@ -2592,15 +2513,15 @@
       execCommand('insertHTML', content);
       if (splitHeadingTag && !isFirefox) {
         // Remove placeholder elements if any
-        editor.querySelectorAll("." + placeholderClass).forEach(function (fragment) {
+        editor.querySelectorAll("." + placeholderClass).forEach(fragment => {
           fragment.remove();
         });
 
         // Unwrap nested heading elements to fix a bug in Webkit/Blink browsers
-        editor.querySelectorAll(headingElements.join()).forEach(function (heading) {
-          var firstChild = heading.firstElementChild;
+        editor.querySelectorAll(headingElements.join()).forEach(heading => {
+          const firstChild = heading.firstElementChild;
           if (firstChild && blockElements.includes(firstChild.tagName)) {
-            heading.replaceWith.apply(heading, heading.childNodes);
+            heading.replaceWith(...heading.childNodes);
           }
         });
       }
@@ -2621,42 +2542,73 @@
     execCommand('defaultParagraphSeparator', 'p');
 
     // Update the textarea value when the editor's content changes
-    addListener(document, 'input', '.wysi-editor', function (event) {
-      var editor = event.target;
-      var textarea = editor.parentNode.nextElementSibling;
-      var instanceId = getInstanceId(editor);
-      var content = editor.innerHTML;
+    addListener(document$1, 'input', '.wysi-editor', event => {
+      const editor = event.target;
+
+      // Skip if input events are being suppressed (e.g., during highlight command)
+      if (suppressInputEvents.has(editor)) {
+        return;
+      }
+      const textarea = editor.parentNode.nextElementSibling;
+      const instanceId = getInstanceId(editor);
+      const content = editor.innerHTML;
       updateContent(textarea, editor, instanceId, content);
     });
 
     // Clean up pasted content
-    addListener(document, 'paste', cleanPastedContent);
+    addListener(document$1, 'paste', cleanPastedContent);
+
+    // Handle undo/redo keyboard shortcuts
+    addListener(document$1, 'keydown', event => {
+      // Check if the target is within an editor
+      const target = event.target;
+      if (!target.closest || !target.closest('.wysi-editor')) {
+        return;
+      }
+      const {
+        editor
+      } = findInstance(target);
+      if (!editor) return;
+      const isCtrl = event.ctrlKey || event.metaKey;
+      const isShift = event.shiftKey;
+      const key = event.key.toLowerCase();
+      if (isCtrl && key === 'z' && !isShift) {
+        // Ctrl+Z: Undo (only if available)
+        if (canUndo(editor)) {
+          event.preventDefault();
+          undo(editor);
+        }
+      } else if (isCtrl && key === 'y' || isCtrl && isShift && key === 'z') {
+        // Ctrl+Y or Ctrl+Shift+Z: Redo (only if available)
+        if (canRedo(editor)) {
+          event.preventDefault();
+          redo(editor);
+        }
+      }
+    });
   }
 
   // Expose Wysi to the global scope
-  window.Wysi = function () {
-    var methods = {
-      destroy: destroy,
-      setContent: setContent
+  window.Wysi = (() => {
+    const methods = {
+      destroy,
+      setContent
     };
     function Wysi(options) {
-      DOMReady(function () {
+      DOMReady(() => {
         init(options || {});
       });
     }
-    var _loop = function _loop(key) {
+    for (const key in methods) {
       Wysi[key] = function () {
         for (var _len = arguments.length, args = new Array(_len), _key = 0; _key < _len; _key++) {
           args[_key] = arguments[_key];
         }
         DOMReady(methods[key], args);
       };
-    };
-    for (var key in methods) {
-      _loop(key);
     }
     return Wysi;
-  }();
+  })();
 
   // Bootstrap Wysi when the DOM is ready
   DOMReady(bootstrap);
