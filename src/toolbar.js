@@ -7,13 +7,13 @@ import { execAction } from './commands.js';
 import {
   addListener,
   buildFragment,
-  createElement,
   DOMReady,
   findDeepestChildNode,
   findInstance,
   getInstanceId,
   getTranslation
 } from './utils.js';
+import { createElement } from './common.js';
 
 /**
  * Render the toolbar.

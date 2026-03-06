@@ -13,7 +13,6 @@ import {
 import {
   addListener,
   cloneObject,
-  createElement,
   DOMReady,
   findEditorInstances,
   findInstance,
@@ -22,6 +21,7 @@ import {
   getTextAreaLabel,
   storeTranslations
 } from './utils';
+import { createElement } from './common.js';
 import {
   dispatchEvent,
   execCommand,

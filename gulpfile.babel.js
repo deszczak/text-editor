@@ -21,8 +21,7 @@ const files = {
 };
 
 const fileHeader = '/*!\n'+
-' * Copyright (c) 2023 Momo Bassit.\n'+
-' * Licensed under the MIT License (MIT)\n'+
+' * Originally made by Momo Bassit.\n'+
 ' * https://github.com/mdbassit/Wysi\n'+
 ' */';
 
@@ -37,7 +36,7 @@ const rollupInput = {
       }
     }),
     babel({
-      babelHelpers: 'bundled'
+      babelHelpers: 'runtime'
     })
   ]
 };
@@ -57,7 +56,18 @@ const rollupOuputs = [
   // Minified output
   {
     file: files.bundle.minified,
-    plugins: [terser()],
+    plugins: [terser({
+      compress: {
+        passes: 2,
+        drop_console: true,
+      },
+      mangle: {
+        toplevel: true,
+      },
+      output: {
+        comments: /Copyright/
+      }
+    })],
     format: 'iife',
     sourcemap: true,
     banner: fileHeader,

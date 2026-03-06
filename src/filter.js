@@ -1,7 +1,7 @@
 import settings from './settings';
 import toolset from './toolset';
-import { buildFragment, cloneObject, createElement } from './utils';
-import { blockElements } from './common';
+import { buildFragment, cloneObject } from './utils';
+import { blockElements, createElement, replaceNode } from './common';
 
 const STYLE_ATTRIBUTE = 'style';
 
@@ -61,34 +61,6 @@ function prepareContent(content, allowedTags, filterOnly) {
   container.appendChild(fragment);
 
   return container.innerHTML;
-}
-
-/**
- * Replace a DOM element with another while preserving its content.
- * @param {object} node The element to replace.
- * @param {string} tag The HTML tag of the new element.
- * @param {boolean} [copyAttributes] If true, also copy the original element's attributes.
- * @return {object} The new element/Node.
- */
-export function replaceNode(node, tag, copyAttributes) {
-  const newElement = createElement(tag);
-  const parentNode = node.parentNode;
-  const attributes = node.attributes;
-
-  // Copy the original element's content
-  newElement.innerHTML = node.innerHTML || node.textContent || node.outerHTML;
-
-  // Copy the original element's attributes
-  if (copyAttributes && attributes) {
-    for (let i = 0; i < attributes.length; i++) {
-      newElement.setAttribute(attributes[i].name, attributes[i].value);
-    }
-  }
-
-  // Replace the element
-  parentNode.replaceChild(newElement, node);
-
-  return newElement;
 }
 
 /**

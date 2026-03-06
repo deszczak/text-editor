@@ -4,7 +4,6 @@ import { selectedClass } from './common.js';
 import { execAction } from './commands.js';
 import {
   addListener,
-  createElement,
   findInstance,
   getCurrentSelection,
   getFragmentContent,
@@ -13,6 +12,7 @@ import {
   setCurrentSelection,
   toggleButton
 } from './utils.js';
+import { createElement } from './common.js';
 
 // Used to give form fields unique ids
 let uniqueFieldId = 0;

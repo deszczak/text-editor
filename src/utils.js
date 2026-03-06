@@ -1,6 +1,6 @@
 import document from 'document';
 import { hasClass } from './shortcuts';
-import { replaceNode } from "./filter";
+import { createElement, replaceNode } from './common';
 
 // Used to store the current DOM selection for later use
 let currentSelection;
@@ -61,29 +61,6 @@ export function buildFragment(html) {
  */
 export function cloneObject(obj) {
   return obj ? JSON.parse(JSON.stringify(obj)) : obj;
-}
-
-/**
- * Create an element and optionally set its attributes.
- * @param {string} tag The HTML tag of the new element.
- * @param {object} [attributes] The element's attributes.
- * @return {object} An HTML element.
- */
-export function createElement(tag, attributes) {
-  const element = document.createElement(tag);
-
-  if (attributes) {
-    for (const attributeName in attributes) {
-      // Attribute names starting with underscore are actually properties
-      if (attributeName[0] === '_') {
-        element[attributeName.substring(1)] = attributes[attributeName];
-      } else {
-        element.setAttribute(attributeName, attributes[attributeName]);
-      }
-    }
-  }
-
-  return element;
 }
 
 /**

@@ -11,8 +11,7 @@ import {
   showToast
 } from './utils';
 import { execCommand } from './shortcuts';
-import { replaceNode } from "./filter";
-import { selectedClass } from "./common";
+import { replaceNode, selectedClass } from './common';
 import { formatTextNodes } from './autoFormat';
 import { htmlToMarkdown } from './markdown';
 import { saveState } from './undoRedo';

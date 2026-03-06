@@ -1,11 +1,11 @@
 import document from 'document';
-import { execAction } from './commands.js';
+import { execAction } from './commands';
 import {
   addListener,
-  createElement,
   findInstance,
   toggleButton
 } from './utils.js';
+import { createElement } from './common'
 
 
 /**
