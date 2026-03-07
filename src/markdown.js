@@ -28,8 +28,8 @@ export function htmlToMarkdown(element) {
       mark: () => `==${content}==`,
       a: () => `[${content}](${node.getAttribute('href') || ''})`,
       blockquote: () => content.split('\n').filter(l => l.trim()).map(l => `> ${l}`).join('\n') + '\n\n',
-      ul: () => content,
-      ol: () => content,
+      ul: () => `${content}\n`,
+      ol: () => `${content}\n`,
       li: () => {
         const parent = node.parentElement
         const prefix = parent?.tagName.toLowerCase() === 'ol' 
