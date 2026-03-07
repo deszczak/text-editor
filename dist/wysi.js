@@ -123,9 +123,6 @@
   const headingElements = ['H1', 'H2', 'H3', 'H4'];
   const blockElements = ['BLOCKQUOTE', 'HR', 'P', 'OL', 'UL', ...headingElements];
 
-  // Browser detection
-  const isFirefox = navigator.userAgent.includes('Gecko/');
-
   /**
    * Create an element with optional attributes.
    * @param {string} tag - HTML tag name
@@ -242,7 +239,7 @@
         wrapper,
         toolbar,
         editor,
-        instanceId: getInstanceId$1(editor)
+        instanceId: getInstanceId(editor)
       };
     }).filter(Boolean);
   }
@@ -290,7 +287,7 @@
    * @param {HTMLElement} editor - Editor element
    * @returns {string} Instance ID
    */
-  const getInstanceId$1 = editor => editor == null ? void 0 : editor.dataset.wid;
+  const getInstanceId = editor => editor == null ? void 0 : editor.dataset.wid;
 
   /**
    * Get DOM elements from selector
@@ -644,7 +641,6 @@
   const MAX_HISTORY = 20;
   const undoStack = new Map();
   const redoStack = new Map();
-  const getInstanceId = editor => editor == null ? void 0 : editor.dataset.wid;
   const createState = editor => ({
     html: editor.innerHTML,
     selection: saveSelection(editor)
@@ -1292,7 +1288,7 @@
     const tags = nodes.map(n => n.tagName.toLowerCase());
     const selectedObj = editor.querySelector("." + selectedClass);
     if (selectedObj) tags.push(selectedObj.tagName.toLowerCase());
-    const instanceId = getInstanceId$1(editor);
+    const instanceId = getInstanceId(editor);
     const allowedTags = ((_instances$instanceId = instances[instanceId]) == null ? void 0 : _instances$instanceId.allowedTags) || {};
 
     // Reset states
@@ -1343,7 +1339,7 @@
     if (button.closest('.wysi-popover')) return;
     if (customAction) {
       var _instance$customActio, _instance$customActio2;
-      const instanceId = getInstanceId$1(editor);
+      const instanceId = getInstanceId(editor);
       const instance = instances[instanceId];
       const actionFn = instance == null ? void 0 : (_instance$customActio = instance.customActions) == null ? void 0 : (_instance$customActio2 = _instance$customActio[customAction]) == null ? void 0 : _instance$customActio2.action;
       if (actionFn) actionFn(editor);
@@ -1646,17 +1642,17 @@
     } = findInstance(event.target);
     const clipboardData = event.clipboardData;
     if (!editor || !clipboardData.types.includes('text/html')) return;
-    const instanceId = getInstanceId$1(editor);
+    const instanceId = getInstanceId(editor);
     const allowedTags = instances[instanceId].allowedTags;
     let pastedContent = prepareContent(clipboardData.getData('text/html'), allowedTags);
     const splitHeadingTag = nodes.some(n => headingElements.includes(n.tagName));
-    if (splitHeadingTag && !isFirefox) {
+    if (splitHeadingTag && !navigator.userAgent.includes('Gecko/')) {
       const splitter = "<h1 class=\"" + placeholderClass + "\"><br></h1><p class=\"" + placeholderClass + "\"><br></p>";
       pastedContent = splitter + pastedContent + splitter;
     }
     execCommand('insertHTML', pastedContent);
     event.preventDefault();
-    if (splitHeadingTag && !isFirefox) {
+    if (splitHeadingTag && !navigator.userAgent.includes('Gecko/')) {
       editor.querySelectorAll("." + placeholderClass).forEach(el => el.remove());
       editor.querySelectorAll(headingElements.join()).forEach(heading => {
         const firstChild = heading.firstElementChild;
@@ -1679,7 +1675,7 @@
       const editor = e.target;
       if (suppressInputEvents.has(editor)) return;
       const textarea = editor.parentNode.nextElementSibling;
-      updateContent(textarea, editor, getInstanceId$1(editor), editor.innerHTML);
+      updateContent(textarea, editor, getInstanceId(editor), editor.innerHTML);
     });
 
     // Paste handler

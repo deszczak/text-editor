@@ -3,7 +3,7 @@ import document from 'document'
 import settings from './settings'
 import { renderToolbar, updateH1ButtonState } from './toolbar'
 import { enableTags, prepareContent } from './filter'
-import { instances, placeholderClass, headingElements, blockElements, isFirefox } from './common'
+import { instances, placeholderClass, headingElements, blockElements } from './common'
 import {
   addListener,
   DOMReady,
@@ -141,7 +141,7 @@ function cleanPastedContent(event) {
 
   const splitHeadingTag = nodes.some(n => headingElements.includes(n.tagName))
 
-  if (splitHeadingTag && !isFirefox) {
+  if (splitHeadingTag && !navigator.userAgent.includes('Gecko/')) {
     const splitter = `<h1 class="${placeholderClass}"><br></h1><p class="${placeholderClass}"><br></p>`
     pastedContent = splitter + pastedContent + splitter
   }
@@ -149,7 +149,7 @@ function cleanPastedContent(event) {
   execCommand('insertHTML', pastedContent)
   event.preventDefault()
 
-  if (splitHeadingTag && !isFirefox) {
+  if (splitHeadingTag && !navigator.userAgent.includes('Gecko/')) {
     editor.querySelectorAll(`.${placeholderClass}`).forEach(el => el.remove())
     editor.querySelectorAll(headingElements.join()).forEach(heading => {
       const firstChild = heading.firstElementChild

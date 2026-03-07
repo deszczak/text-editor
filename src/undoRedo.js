@@ -1,11 +1,9 @@
 import document from 'document'
-import {showToast} from "./utils";
+import { showToast, getInstanceId } from "./utils"
 
 const MAX_HISTORY = 20
 const undoStack = new Map()
 const redoStack = new Map()
-
-const getInstanceId = (editor) => editor?.dataset.wid
 
 const createState = (editor) => ({
   html: editor.innerHTML,

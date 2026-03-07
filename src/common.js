@@ -11,9 +11,6 @@ export const placeholderClass = 'wysi-fragment-placeholder'
 export const headingElements = ['H1', 'H2', 'H3', 'H4']
 export const blockElements = ['BLOCKQUOTE', 'HR', 'P', 'OL', 'UL', ...headingElements]
 
-// Browser detection
-export const isFirefox = navigator.userAgent.includes('Gecko/')
-
 /**
  * Create an element with optional attributes.
  * @param {string} tag - HTML tag name
