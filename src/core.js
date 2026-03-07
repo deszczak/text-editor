@@ -1,7 +1,7 @@
 import window from 'window'
 import document from 'document'
 import settings from './settings'
-import { renderToolbar } from './toolbar'
+import { renderToolbar, updateH1ButtonState } from './toolbar'
 import { enableTags, prepareContent } from './filter'
 import { instances, placeholderClass, headingElements, blockElements, isFirefox } from './common'
 import {
@@ -53,6 +53,7 @@ function init(options) {
       wrapper.append(toolbar.cloneNode(true), editor)
       field.before(wrapper)
       configure(wrapper, options)
+      updateH1ButtonState(editor, wrapper.firstElementChild)
     } else configure(sibling, options)
   })
 }

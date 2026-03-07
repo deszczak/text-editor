@@ -93,6 +93,20 @@ function renderFormatTool() {
 }
 
 /**
+ * Update the H1 button state for a specific editor instance
+ * @param {HTMLElement} editor - The editor element
+ * @param {HTMLElement} toolbar - The toolbar element
+ */
+export function updateH1ButtonState(editor, toolbar) {
+  const h1Button = toolbar.querySelector('[data-action="format"][data-option="h1"]')
+  if (h1Button) {
+    const hasH1 = editor.querySelector('h1')
+    if (hasH1) h1Button.setAttribute('disabled', '')
+    else h1Button.removeAttribute('disabled')
+  }
+}
+
+/**
  * Update toolbar buttons state
  */
 function updateToolbarState() {
@@ -130,12 +144,7 @@ function updateToolbarState() {
   })
 
   // Disable the h1 button if there's already an H1 element in the content
-  const h1Button = toolbar.querySelector('[data-action="format"][data-option="h1"]')
-  if (h1Button) {
-    const hasH1 = editor.querySelector('.wysi-editor h1')
-    if (hasH1) h1Button.setAttribute('disabled', '')
-    else h1Button.removeAttribute('disabled')
-  }
+  updateH1ButtonState(editor, toolbar)
 }
 
 /**

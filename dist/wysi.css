@@ -201,7 +201,7 @@
       text-align: left;
       cursor: pointer;
 
-      &:is(:hover, :focus-visible) {
+      &:not(:disabled):is(:hover, :focus-visible) {
         background-color: var(--wysi-dropdown-item-focus-bg);
       }
     }
