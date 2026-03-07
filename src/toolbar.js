@@ -128,6 +128,14 @@ function updateToolbarState() {
       if (action) toolbar.querySelector(`[data-action="${action}"]`)?.setAttribute('aria-pressed', 'true')
     }
   })
+
+  // Disable the h1 button if there's already an H1 element in the content
+  const h1Button = toolbar.querySelector('[data-action="format"][data-option="h1"]')
+  if (h1Button) {
+    const hasH1 = editor.querySelector('.wysi-editor h1')
+    if (hasH1) h1Button.setAttribute('disabled', '')
+    else h1Button.removeAttribute('disabled')
+  }
 }
 
 /**

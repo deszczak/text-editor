@@ -1165,6 +1165,7 @@
   addListener(document$1.documentElement, 'mousemove', '.wysi-listbox > div > button', e => e.target.focus());
   addListener(document$1, 'click', '.wysi-listbox > div > button', e => {
     const item = e.target;
+    if (item.hasAttribute('disabled')) return;
     const {
       editor
     } = findInstance(item);
@@ -1330,6 +1331,13 @@
         if (action) (_toolbar$querySelecto = toolbar.querySelector("[data-action=\"" + action + "\"]")) == null ? void 0 : _toolbar$querySelecto.setAttribute('aria-pressed', 'true');
       }
     });
+
+    // Disable the h1 button if there's already an H1 element in the content
+    const h1Button = toolbar.querySelector('[data-action="format"][data-option="h1"]');
+    if (h1Button) {
+      const hasH1 = editor.querySelector('.wysi-editor h1');
+      if (hasH1) h1Button.setAttribute('disabled', '');else h1Button.removeAttribute('disabled');
+    }
   }
 
   /**

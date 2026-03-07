@@ -79,6 +79,8 @@ addListener(document.documentElement, 'mousemove', '.wysi-listbox > div > button
 
 addListener(document, 'click', '.wysi-listbox > div > button', (e) => {
   const item = e.target
+  if (item.hasAttribute('disabled')) return
+  
   const { editor } = findInstance(item)
   const selection = document.getSelection()
 

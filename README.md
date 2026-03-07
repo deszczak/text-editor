@@ -20,6 +20,7 @@ My version removes some things that I don't need and adds some features that I d
 4. Copy as Markdown
 5. Toast messages on: "Auto format", "Remove format", "copy as Markdown", "Undo" and "Redo"
 6. Custom actions support
+7. Disable the "Heading 1" button when the editor's content already has an H1 element
 
 \* Puts non-breaking spaces after orphan words
 and removes them from where they shouldn't be – e.g., from before punctuation.

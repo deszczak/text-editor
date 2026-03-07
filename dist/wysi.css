@@ -131,9 +131,12 @@
       background-color: var(--wysi-highlight);
     }
 
-    & * {
-      pointer-events: none;
+    &:disabled {
+      opacity: .5;
+      cursor: not-allowed;
     }
+
+    & * { pointer-events: none }
   }
 
   :not([data-custom-action]) svg {
@@ -183,6 +186,7 @@
 
     &[aria-expanded="true"] {
       background-color: var(--wysi-button-hover-bg);
+      border-radius: 3px 3px 0 0;
     }
 
     &[aria-expanded="false"] + div {
@@ -194,7 +198,7 @@
     position: absolute;
     margin-top: -1px;
     z-index: 1;
-    border-radius: 0 0 3px 3px;
+    border-radius: 0 3px 3px 3px;
     background-color: var(--wysi-dropdown-bg);
     box-shadow: 0 10px 20px var(--wysi-shadow-color);
     overflow: hidden;
