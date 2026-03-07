@@ -1,44 +1,49 @@
-
 # Wysi
+_Fork by [Daniel Leszczak](https://github.com/deszczak/text-editor)_
 
-![Wysi in light mode](https://mdbassit.github.io/Wysi/images/wysi-light.png)
+This is a fork of [Wysi](https://github.com/mdbassit/Wysi) by [Momo Bassit](https://github.com/mdbassit).
+It's a lightweight and simple WYSIWYG editor written in vanilla ES6 with no dependencies.
+You can also learn more about it [here](https://wysi.js.org/) and see the demo.
 
-A lightweight and simple WYSIWYG editor written in vanilla ES6 with no dependencies.
+My version removes some things that I don't need and adds some features that I do need.
 
-[**View demo**](https://mdbassit.github.io/Wysi)
+## What's removed?
+1. Text alignment
+2. Outdent and indent
+3. Image upload
+4. Translations
 
-## Features
+## What's added?
+1. Custom undo/redo system
+2. Text highlighting
+3. Auto format*
+4. Copy as Markdown
+5. Toast messages on: "Auto format", "Remove format", "copy as Markdown", "Undo" and "Redo"
+6. Custom actions support
 
-* Lightweight (around 12KB minified and gzipped)
-* Zero dependencies
-* Very easy to use
-* Customizable
-* Dark mode support
-* Auto grow editor instances to fit content
-* Filters content when pasting
-* Works on all modern browsers
+\* Puts non-breaking spaces after orphan words
+and removes them from where they shouldn't be – e.g., from before punctuation.
+It also replaces hyphens surrounded by spaces with en-dash.
 
-### TODO
+## What's changed?
+I made the entire editor (not only the toolbar) aware of user's `prefer-color-scheme`
+and removed the previous darkMode parameter. I also exchnged the `cleanCSS` for `cssnano`
+in the build process to allow for newer CSS features like nesting
+and overall changed some things for my own needs.
 
-(Work in progress)
+**FYI:** you'll probably find the original codebase more friendly and like it more :D
 
-* Add support for custom CSS classes
-* Theming
+### Why did I do that?
+I searched for a WYSIWYG editor that I could use in my notes app, and Wysi was the closest to it.
 
-## Getting Started
+---
 
-### Basic usage
+## Basic usage
 
-Download the [latest version](https://github.com/mdbassit/Wysi/releases/latest), and add the script and style to your page:
+Download and add the script and style **min** files to your page:
 ```html
 <link rel="stylesheet" href="wysi.min.css"/>
 <script src="wysi.min.js"></script>
-```
-
-Or include from a CDN (not recommended in production):
-```html
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/mdbassit/Wysi@latest/dist/wysi.min.css"/>
-<script src="https://cdn.jsdelivr.net/gh/mdbassit/Wysi@latest/dist/wysi.min.js"></script>
 ```
 
 Then create an editor instance using a CSS selector pointing to one or more `textarea` elements:
@@ -64,7 +69,8 @@ Alternatively, the `onChange` function can be used to achieve the same result (s
 
 ### Customizing the editor
 
-The editor can be configured by calling `Wysi()` and passing an options object to it. Here is a list of all the available options:
+The editor can be configured by calling `Wysi()` and passing an options object to it.
+Here is a list of all the available options:
 
 ```js
 Wysi({
@@ -72,9 +78,6 @@ Wysi({
   // A selector pointing to one or more textarea elements to convert into WYSIWYG editors.
   // This can also accept a Node, a NodeList, an HTMLCollection or an array of DOM elements.
   el: '.richtext',
-
-  // Enable dark mode. This only affects the toolbar, not the content area.
-  darkMode: false,
 
   // The height of the editable region.
   height: 200,
@@ -86,42 +89,50 @@ Wysi({
   // Automatically hide the toolbar when the editable region is not focused.
   autoHide: false,
 
+  // The toolbar configuration. '|' separates the buttons. '-' separates the lines.
+  tools: [
+    'goBack', // Custom action
+    'format', '|',
+    'bold', 'italic', 'underline', 'strike', 'highlight', '|',
+    'ul', 'ol', '|',
+    'link', 'hr', 'quote', '|',
+    'autoFormat', 'removeFormat', '|',
+    'markdownExport'
+  ],
+
   // A function that is called whenever the content of the editor instance changes.
-  // The  new content is passed to the function as an argument.
-  onChange: (content) => console.log(content)
-});
+  // The new content is passed to the function as an argument.
+  onChange: (content) => console.log(content),
+  
+  // Object of custom actions – name: { innerHTML: icon|text, label: string, action: fn(editor){} }
+  customActions: {
+    goBack: {
+      innerHTML: `
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="15 18 9 12 15 6"/>
+        </svg>
+      `,
+      label: 'Go back',
+      action: (editor) => {
+        console.log(editor.innerHTML)
+        Wysi.destroy('.richtext')
+        console.log('Custom action – Go back – was executed.');
+      }
+    }
+  }
+})
 ```
 
-## Building from source
+## Forking
 
-Clone the git repo:
-```bash
-git clone git@github.com:mdbassit/Wysi.git
-```
-
-Enter the Wysi directory and install the development dependencies:
-```bash
-cd Wysi && npm install
-```
-
-Run the build script:
-```bash
-npm run build
-```
-The built version will be in the `dist` directory in both minified and full copies.
-
-Alternatively, you can start a gulp watch task to automatically build when the source files are modified:
-```bash
-npm run watch
-```
+Feel free to do so~
 
 ## Contributing
 
-If you find a bug or would like to implement a missing feature, please create an issue first before submitting a pull request (PR).
-
-When submitting a PR, please do not include the changes to the `dist` directory in your commits.
+If you find a bug or would like to implement a missing feature,
+please visit the original repository and create an issue or a pull request there.
 
 ## License
 
-Copyright (c) 2023 Momo Bassit.  
-**Wysi** is licensed under the [MIT license](https://github.com/mdbassit/Wysi/blob/main/LICENSE.txt).
+Copyright (c) 2023 Momo Bassit _+ 2026 Daniel Leszczak_.  
+All **Wysi** instances are licensed under the [MIT license](https://github.com/mdbassit/Wysi/blob/main/LICENSE.txt).

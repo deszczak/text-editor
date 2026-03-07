@@ -676,6 +676,7 @@
     editor.dispatchEvent(new Event('input', {
       bubbles: true
     }));
+    showToast('Undo', editor);
     return true;
   }
   function redo(editor) {
@@ -689,6 +690,7 @@
     editor.dispatchEvent(new Event('input', {
       bubbles: true
     }));
+    showToast('Redo', editor);
     return true;
   }
   const canUndo = editor => {

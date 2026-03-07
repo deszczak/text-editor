@@ -20,9 +20,8 @@ Wysi({
         </svg>
       `,
       label: 'Go back',
-      action: (editor) => {
-        console.log('Custom action – Go back – was run');
-        alert('Custom action executed!');
+      action: () => {
+        console.log('Custom action – Go back – was executed.')
       }
     }
   },

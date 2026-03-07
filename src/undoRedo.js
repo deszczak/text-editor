@@ -1,4 +1,5 @@
 import document from 'document'
+import {showToast} from "./utils";
 
 const MAX_HISTORY = 20
 const undoStack = new Map()
@@ -41,6 +42,7 @@ export function undo(editor) {
   editor.innerHTML = prevState.html
   restoreSelection(editor, prevState.selection)
   editor.dispatchEvent(new Event('input', { bubbles: true }))
+  showToast('Undo', editor)
   return true
 }
 
@@ -55,6 +57,7 @@ export function redo(editor) {
   editor.innerHTML = nextState.html
   restoreSelection(editor, nextState.selection)
   editor.dispatchEvent(new Event('input', { bubbles: true }))
+  showToast('Redo', editor)
   return true
 }
 
