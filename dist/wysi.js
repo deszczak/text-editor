@@ -1113,14 +1113,12 @@
     });
     const menu = createElement('div', {
       role: 'listbox',
-      tabindex: -1,
       'aria-label': label
     });
     items.forEach(item => {
       menu.appendChild(createElement('button', {
         type: 'button',
         role: 'option',
-        tabindex: -1,
         'aria-label': item.label,
         'aria-selected': false,
         'data-action': item.action,
@@ -1153,16 +1151,8 @@
 
   // Event listeners
   addListener(document$1, 'click', '.wysi-listbox > button', e => {
-    closeListBox();
-    openListBox(e.target);
+    e.target.getAttribute('aria-expanded') === 'true' ? closeListBox() : openListBox(e.target);
   });
-  addListener(document$1, 'keydown', '.wysi-listbox > button', e => {
-    if (['ArrowUp', 'ArrowDown', 'Enter', ' '].includes(e.key)) {
-      openListBox(e.target);
-      e.preventDefault();
-    }
-  });
-  addListener(document$1.documentElement, 'mousemove', '.wysi-listbox > div > button', e => e.target.focus());
   addListener(document$1, 'click', '.wysi-listbox > div > button', e => {
     const item = e.target;
     if (item.hasAttribute('disabled')) return;
@@ -1174,39 +1164,15 @@
       execAction(item.dataset.action, editor, [item.dataset.option]);
     }
     selectListBoxItem(item);
+    closeListBox();
   });
-  addListener(document$1, 'keydown', '.wysi-listbox > div > button', e => {
-    const item = e.target;
-    const listBox = item.parentNode;
-    const button = listBox.previousElementSibling;
-    const handlers = {
-      ArrowUp: () => {
-        var _item$previousElement;
-        return (_item$previousElement = item.previousElementSibling) == null ? void 0 : _item$previousElement.focus();
-      },
-      ArrowDown: () => {
-        var _item$nextElementSibl;
-        return (_item$nextElementSibl = item.nextElementSibling) == null ? void 0 : _item$nextElementSibl.focus();
-      },
-      Home: () => listBox.firstElementChild.focus(),
-      End: () => listBox.lastElementChild.focus(),
-      Tab: () => item.click(),
-      Escape: () => toggleButton(button, false)
-    };
-    if (handlers[e.key]) {
-      handlers[e.key]();
-      e.preventDefault();
-      if (e.key !== 'Tab') e.stopImmediatePropagation();
-    }
+  addListener(document$1, 'click', e => {
+    if (!e.target.closest('.wysi-listbox')) closeListBox();
   });
-
-  // Prevent closing immediately after opening
-  let isOpeningInProgress = false;
-  addListener(document$1, 'click', () => {
-    if (!isOpeningInProgress) closeListBox();
+  addListener(document$1, 'keydown', e => {
+    const listBox = document$1.querySelector('.wysi-listbox:has([aria-expanded="true"]) > [role="listbox"]');
+    if (listBox && e.target === listBox.lastElementChild && !e.shiftKey) closeListBox();
   });
-  addListener(document$1, 'mousedown', '.wysi-listbox > button', () => isOpeningInProgress = true);
-  addListener(document$1, 'mouseup', () => setTimeout(() => isOpeningInProgress = false));
 
   /**
    * Render the toolbar

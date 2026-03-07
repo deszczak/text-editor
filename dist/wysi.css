@@ -30,6 +30,7 @@
   --wysi-popover-button-border: #ccc;
   --wysi-popover-button-hover-bg: #ddd;
   --wysi-popover-button-text: light-dark(#333, #ddd);
+  --wysi-popover-button-hover-text: #333;
 
   /* Primary action button (popover) */
   --wysi-primary-button-color: #fff;
@@ -56,9 +57,7 @@
   --wysi-popover-shadow-color: rgb(0 0 0 / .2);
 }
 
-#wysi-svg-icons {
-  display: none;
-}
+#wysi-svg-icons { display: none }
 
 .wysi-wrapper {
   display: inline-flex;
@@ -72,13 +71,9 @@
   line-height: 1.5;
   outline: 1px solid var(--wysi-outline-color);
 
-  &:focus-within {
-    outline-color: var(--wysi-primary);
-  }
+  &:focus-within { outline-color: var(--wysi-primary) }
 
-  & + textarea {
-    display: none;
-  }
+  & + textarea { display: none }
 }
 
 .wysi-toolbar {
@@ -93,9 +88,7 @@
   background-color: var(--wysi-toolbar-bg);
   box-sizing: border-box;
 
-  :is(*, *::before, *::after) {
-    box-sizing: inherit;
-  }
+  :is(*, *::before, *::after) { box-sizing: inherit }
 
   & > button,
   .wysi-popover > button {
@@ -122,7 +115,7 @@
     box-shadow: none;
     cursor: pointer;
 
-    &:is(:hover, :focus) {
+    &:is(:hover, :focus-visible) {
       background-color: var(--wysi-button-hover-bg);
     }
 
@@ -147,9 +140,7 @@
 }
 
 .wysi-autohide {
-  .wysi-toolbar {
-    display: none;
-  }
+  .wysi-toolbar { display: none }
 
   &:focus-within .wysi-toolbar {
     display: flex;
@@ -189,9 +180,7 @@
       border-radius: 3px 3px 0 0;
     }
 
-    &[aria-expanded="false"] + div {
-      display: none;
-    }
+    &[aria-expanded="false"] + div { display: none }
   }
 
   div {
@@ -212,7 +201,7 @@
       text-align: left;
       cursor: pointer;
 
-      &:focus {
+      &:is(:hover, :focus-visible) {
         background-color: var(--wysi-dropdown-item-focus-bg);
       }
     }
@@ -221,9 +210,7 @@
 
 /** Format tool **/
 .wysi-format {
-  button {
-    font-size: .875em;
-  }
+  button { font-size: .875em }
 
   & > button {
     width: 120px;
@@ -235,21 +222,10 @@
     padding: 5px;
   }
 
-  button[data-option^="h"] {
-    font-weight: bold;
-  }
-
-  button[data-option="h1"] {
-    font-size: 1.25em;
-  }
-
-  button[data-option="h2"] {
-    font-size: 1.125em;
-  }
-
-  button[data-option="h3"] {
-    font-size: 1em;
-  }
+  button[data-option^="h"] { font-weight: bold }
+  button[data-option="h1"] { font-size: 1.25em }
+  button[data-option="h2"] { font-size: 1.125em }
+  button[data-option="h3"] { font-size: 1em }
 }
 /** End of Format tool **/
 
@@ -260,10 +236,7 @@
 
   & > button {
     margin: 0;
-
-    &[aria-expanded="false"] + div {
-      display: none;
-    }
+    &[aria-expanded="false"] + div { display: none }
   }
 
   div {
@@ -305,8 +278,9 @@
       border-radius: 13px;
       font-size: .9em;
 
-      &:is(:hover, :focus) {
+      &:is(:hover, :focus-visible) {
         background-color: var(--wysi-popover-button-hover-bg);
+        color: var(--wysi-popover-button-hover-text);
       }
 
       &:last-of-type {
@@ -314,9 +288,7 @@
         color: var(--wysi-primary-button-color);
         background-color: var(--wysi-primary);
 
-        &:is(:hover, :focus) {
-          background-color: var(--wysi-hover);
-        }
+        &:is(:hover, :focus-visible) { background-color: var(--wysi-hover) }
       }
 
       &[data-action="unlink"] {
@@ -412,9 +384,7 @@
   border-right: 1px solid var(--wysi-separator-color);
 }
 
-.wysi-newline {
-  flex-basis: 100%;
-}
+.wysi-newline { flex-basis: 100% }
 
 .wysi-editor {
   min-height: 200px;
@@ -425,9 +395,7 @@
   outline: none;
   overflow: auto;
 
-  & > :first-child {
-    margin-top: 0;
-  }
+  & > :first-child { margin-top: 0 }
 
   mark {
     background-color: var(--wysi-editor-highlight-color);
@@ -441,9 +409,7 @@
     color: var(--wysi-editor-link-color);
     text-decoration: underline;
 
-    &:hover {
-      text-decoration: none;
-    }
+    &:hover { text-decoration: none }
   }
 
   blockquote {
@@ -460,9 +426,7 @@
   }
 }
 
-.wysi-autogrow .wysi-editor {
-  max-height: none !important;
-}
+.wysi-autogrow .wysi-editor { max-height: none !important }
 
 /** Toast notification **/
 .wysi-toast {
@@ -486,5 +450,3 @@
   opacity: 1;
   transform: translateX(-50%) translateY(0);
 }
-
-

@@ -135,5 +135,5 @@ please visit the original repository and create an issue or a pull request there
 
 ## License
 
-Copyright (c) 2023 Momo Bassit _+ 2026 Daniel Leszczak_.  
+Copyright © 2023 Momo Bassit _+ 2026 Daniel Leszczak_.  
 All **Wysi** instances are licensed under the [MIT license](https://github.com/mdbassit/Wysi/blob/main/LICENSE.txt).

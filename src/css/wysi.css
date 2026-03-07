@@ -30,6 +30,7 @@
   --wysi-popover-button-border: #ccc;
   --wysi-popover-button-hover-bg: #ddd;
   --wysi-popover-button-text: light-dark(#333, #ddd);
+  --wysi-popover-button-hover-text: #333;
 
   /* Primary action button (popover) */
   --wysi-primary-button-color: #fff;
@@ -114,7 +115,7 @@
     box-shadow: none;
     cursor: pointer;
 
-    &:is(:hover, :focus) {
+    &:is(:hover, :focus-visible) {
       background-color: var(--wysi-button-hover-bg);
     }
 
@@ -200,7 +201,7 @@
       text-align: left;
       cursor: pointer;
 
-      &:focus {
+      &:is(:hover, :focus-visible) {
         background-color: var(--wysi-dropdown-item-focus-bg);
       }
     }
@@ -277,8 +278,9 @@
       border-radius: 13px;
       font-size: .9em;
 
-      &:is(:hover, :focus) {
+      &:is(:hover, :focus-visible) {
         background-color: var(--wysi-popover-button-hover-bg);
+        color: var(--wysi-popover-button-hover-text);
       }
 
       &:last-of-type {
@@ -286,7 +288,7 @@
         color: var(--wysi-primary-button-color);
         background-color: var(--wysi-primary);
 
-        &:is(:hover, :focus) { background-color: var(--wysi-hover) }
+        &:is(:hover, :focus-visible) { background-color: var(--wysi-hover) }
       }
 
       &[data-action="unlink"] {
